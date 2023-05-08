@@ -4,6 +4,15 @@
 __all__ = ['read_json', 'pick', 'omit', 'get_var_attrs', 'get_attrs_enc', 'pairwise_distance_matrix', 'gauss_fwin_fwhm',
            'gauss_fwin', 'smooth_fwhm', 'smooth']
 
+# %% ../nbs/lib_utils.ipynb 2
+from numpy.typing import ArrayLike, NDArray
+import numpy as np
+from scipy.signal.windows import gaussian
+import jstyleson as json
+from addict import Dict as adict
+from operator import itemgetter
+from toolz import keyfilter
+
 # %% ../nbs/lib_utils.ipynb 5
 def read_json(fpath: str, *, object_hook: type = adict, cls = None) -> dict:
     """ Parse json file to python dict.
