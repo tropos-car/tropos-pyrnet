@@ -157,28 +157,26 @@
       "attributes": {
         "standard_name": "quality_flag",
         "long_name": "Maintenance quality control flags for main pyranometer",
-        "note": "Low Battery is True if Voltage drops below 4V (operation might be unstable), soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
+        "note": "Soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
         "valid_range": [
           0,
-          23
+          11
         ],
         "flag_masks": [
-          1,
-          6,
-          6,
-          6,
-          24,
-          24
+          3,
+          3,
+          3,
+          12,
+          12
         ],
         "flag_values": [
           1,
           2,
+          3,
           4,
-          6,
-          8,
-          16
+          8
         ],
-        "flag_meanings": "low_battery soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
+        "flag_meanings": "soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
         "_FillValue": 255,
         "zlib": true
       }
@@ -188,28 +186,26 @@
       "attributes": {
         "standard_name": "quality_flag",
         "long_name": "Maintenance quality control flags for secondary pyranometer",
-        "note": "Low Battery is True if Voltage drops below 4V (operation might be unstable), soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
+        "note": "Soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
         "valid_range": [
           0,
-          23
+          11
         ],
         "flag_masks": [
-          1,
-          6,
-          6,
-          6,
-          24,
-          24
+          3,
+          3,
+          3,
+          12,
+          12
         ],
         "flag_values": [
           1,
           2,
+          3,
           4,
-          6,
-          8,
-          16
+          8
         ],
-        "flag_meanings": "low_battery soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
+        "flag_meanings": "soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
         "_FillValue": 255,
         "zlib": true
       },
