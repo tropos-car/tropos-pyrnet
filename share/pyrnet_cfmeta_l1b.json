@@ -208,36 +208,36 @@
         "flag_meanings": "soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
         "_FillValue": 255,
         "zlib": true
-      },
-      "lat": {
-        "type": "u4",
-        "attributes": {
-          "standard_name": "latitude",
-          "units": "degree_north",
-          "scale_factor": 1e-6,
-          "add_offset": -90,
-          "valid_range": [
-            0,
-            180e6
-          ],
-          "_FillValue": 4294967295,
-          "zlib": true
-        }
-      },
-      "lon": {
-        "type": "u4",
-        "attributes": {
-          "standard_name": "longitude",
-          "units": "degree_east",
-          "scale_factor": 1e-6,
-          "add_offset": -180,
-          "valid_range": [
-            0,
-            360e6
-          ],
-          "_FillValue": 4294967295,
-          "zlib": true
-        }
+      }
+    },
+    "lat": {
+      "type": "u4",
+      "attributes": {
+        "standard_name": "latitude",
+        "units": "degree_north",
+        "scale_factor": 1e-6,
+        "add_offset": -90,
+        "valid_range": [
+          0,
+          180e6
+        ],
+        "_FillValue": 4294967295,
+        "zlib": true
+      }
+    },
+    "lon": {
+      "type": "u4",
+      "attributes": {
+        "standard_name": "longitude",
+        "units": "degree_east",
+        "scale_factor": 1e-6,
+        "add_offset": -180,
+        "valid_range": [
+          0,
+          360e6
+        ],
+        "_FillValue": 4294967295,
+        "zlib": true
       }
     }
   }
