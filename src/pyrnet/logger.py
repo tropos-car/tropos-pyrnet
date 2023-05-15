@@ -13,6 +13,8 @@ import xarray as xr
 from scipy.stats import linregress
 import logging
 from toolz import assoc_in
+import pkg_resources as pkg_res
+
 from trosat import sunpos as sp
 
 from . import utils
@@ -321,16 +323,16 @@ def read_logger(
     xarray.Dataset
         Raw Logger data for one measurement periode.
     """
+    fn_cfjson = pkg_res.resource_filename("pyrnet", "share/pyrnet_cfmeta_l1b.json")
+
     default_config = {
             "campaign": "",
             "dt": np.datetime64("now").item(),
-            "sdate": np.datetime64("now").item(),
-            "edate": np.datetime64("now").item(),
             "user": "",
             "authors_measurements": "",
             "authors_processing": "",
             "notes":"",
-            "cfjson": "../share/pyrnet_cfmeta_l1b.json",
+            "cfjson": fn_cfjson,
             "stripminutes": 5,
         }
     if config is None:
@@ -352,6 +354,11 @@ def read_logger(
 
     # 2. Sync GPS to ADC time
     adctime = sync_adc_time(rec_adc, rec_gprmc)
+
+    config.update({
+        "sdate": pd.to_datetime(adctime[0]),
+        "edate": pd.to_datetime(adctime[-1]),
+    })
 
     # 3. Apply appropriate binning to ADC values
     adc_counts, bintime = adc_binning(rec_adc, time=adctime, bins=bins)

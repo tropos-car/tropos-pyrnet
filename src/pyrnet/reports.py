@@ -191,7 +191,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 15
+# %% ../../nbs/pyrnet/reports.ipynb 16
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -221,7 +221,7 @@ _mark_keys = {
 
 def parse_report(
         df:  pd.DataFrame,
-        date_of_maintenance: float | dt.datetime | np.datetime64,
+        date_of_maintenance: float | dt.datetime | np.datetime64 | None,
 ) -> dict:
     """
     User pandas.read_csv (sep=';') to parse the survey report.
@@ -230,25 +230,33 @@ def parse_report(
     ----------
    df: Dataframe
         LimeSurvey response parsed as pandas Dataframe.
-    date_of_maintenance: float, datetime or datetime64
-        A rough date of maintenance (at least day resolution). If float, interpreted as Julian day from 2000-01-01T12:00.
+    date_of_maintenance: float, datetime, datetime64 or None
+        A rough date of maintenance (at least day resolution). If float, interpreted as Julian day from 2000-01-01T12:00. If None, the most recent logbook entries will be parsed.
     Returns
     -------
     dict
         Dictionary storing maintenance flags and notes by PyrNet box number.
     """
-    date_of_maintenance = utils.to_datetime64(date_of_maintenance)
+    if date_of_maintenance is not None:
+        date_of_maintenance = utils.to_datetime64(date_of_maintenance)
 
     results = {}
     for i in range(df.shape[0]):
+        box = int(df["Q00"].values[i])
+        key = f"{box:03d}"
+
         # consider only reports +-2 days around date of maintenance
         mdate = pd.to_datetime(df['datestamp'][i])
-        if np.abs(mdate - date_of_maintenance) > np.timedelta64(2,'D'):
+        if date_of_maintenance is None:
+            dtime = np.abs(mdate - np.max(df['datestamp']))
+        else:
+            dtime = np.abs(mdate - date_of_maintenance)
+
+        if dtime > np.timedelta64(2,'D'):
             continue
 
         # store report in dictionary
-        box = int(df["Q00"].values[i])
-        key = f"{box:03d}"
+
         if key not in results:
             # initialize marks
             for mkey in _mark_keys:
@@ -276,7 +284,7 @@ def parse_report(
     return results
 
 
-# %% ../../nbs/pyrnet/reports.ipynb 19
+# %% ../../nbs/pyrnet/reports.ipynb 20
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
