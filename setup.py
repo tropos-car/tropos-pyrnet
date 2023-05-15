@@ -8,13 +8,14 @@ setup(
     license= "OSI Approved :: GNU General Public License v3 (GPLv3)",
     packages= ["pyrnet"],
     package_dir={"":"src"},
+    package_data={"pyrnet": ["share/*.json"]},
     include_package_data=True,
     entry_points={
         'console_scripts': [
             'pyrnet = pyrnet.click:cli',
         ],
     },
-    python_requires= ">=3.7, <3.10",
+    # python_requires= "==3.9",
     install_requires=[
         "numpy",
         "scipy",

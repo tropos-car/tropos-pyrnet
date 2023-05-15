@@ -13,9 +13,7 @@ import datetime as dt
 import numpy as np
 from toolz import assoc_in
 
-import utils
-
-
+from . import utils
 
 # %% ../../nbs/pyrnet/reports.ipynb 7
 def get_responses(

@@ -15,8 +15,8 @@ import logging
 from toolz import assoc_in
 from trosat import sunpos as sp
 
-import utils
-import reports
+from . import utils
+from . import reports
 
 # logging setup
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s:%(message)s')
