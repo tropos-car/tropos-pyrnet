@@ -333,11 +333,11 @@ def read_logger(
 
     default_config = {
             "campaign": "",
-            "dt": np.datetime64("now").item(),
-            "user": "",
-            "authors_measurements": "",
-            "authors_processing": "",
-            "notes":"",
+            "project": "",
+            "creator_name": "",
+            "contributor_name": "",
+            "contributor_role": "",
+            "notes": "",
             "cfjson": fn_cfjson,
             "stripminutes": 5,
         }
@@ -360,11 +360,6 @@ def read_logger(
 
     # 2. Sync GPS to ADC time
     adctime = sync_adc_time(rec_adc, rec_gprmc)
-
-    config.update({
-        "sdate": adctime[0].item(),
-        "edate": adctime[-1].item(),
-    })
 
     # 3. Apply appropriate binning to ADC values
     adc_counts, bintime = adc_binning(rec_adc, time=adctime, bins=bins)
@@ -397,9 +392,26 @@ def read_logger(
 
     # add additional global attrs
     gattrs.update(global_attrs)
-    #  TODO update history with package version (versioneer?)
-    # if "history" in gattrs.keys():
-    #     gattrs.update({'history': f"\n {fname} processed with version {}"})
+
+    duration = adctime[-1]-adctime[0]
+    resolution = adctime[1] - adctime[0]
+    now = pd.to_datetime(np.datetime64("now"))
+    gattrs.update({
+        'processing_level': 'l1a',
+        # 'product_version': '',# TODO: add version
+        'date_created': now.isoformat(),
+        'geospatial_lat_min': np.nanmin(lat),
+        'geospatial_lat_max': np.nanmax(lat),
+        'geospatial_lat_units': 'degN',
+        'geospatial_lon_min': np.nanmin(lon),
+        'geospatial_lon_max': np.nanmax(lon),
+        'geospatial_lon_units': 'degE',
+        'time_coverage_start': pd.to_datetime(adctime[0]).isoformat(),
+        'time_coverage_end': pd.to_datetime(adctime[-1]).isoformat(),
+        'time_coverage_duration': pd.to_timedelta(duration).isoformat(),
+        'time_coverage_resolution': pd.to_timedelta(resolution).isoformat(),
+        'history': f'{now.isoformat()}: Generated level l1a  by pyrnet version XX; ', # TODO: add version info
+    })
 
     # get variable attributes
     d = utils.get_var_attrs(cfdict)

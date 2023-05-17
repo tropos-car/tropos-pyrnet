@@ -1,10 +1,16 @@
+// DEFAULT PROCESSING CONFIGURATION of PYRNET
+// It is recommended to create a separate config.jons including
+//  at least specific project meta information.
+// Additional conifg files are merged to the default with the
+//  'pyrnet processing' -c option.
 {
   "output" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_{level}.c{collection:02d}.{sfx}",
   // Meta information
   "campaign": "", // Campaign name
-  "user": "", // Processing User
-  "authors_measurements": "", // People involved in measurements
-  "authors_processing": "", // People involved in post-processing
+  "project": "", // Project name
+  "creator_name": "", // Processing User
+  "contributor_name": "", // Names of any contributing individual
+  "contributor_role": "", // Role of any of the contributing individuals
   "notes": "",
   "collection": 1, //Processing collection
   // Parsing config
@@ -17,9 +23,11 @@
   "online": {
     "base_url": "https://lgs-car.limesurvey.net/admin/remotecontrol",
     "user_name": "BeRichter",
+    // "password": "", // LimeSurvey login password
     "user_id": 1, // user ID
     "sid": 224783 // survey ID
   },
   // Additional global attributes to store in the output Dataset
+  // e.g.,  "comment" and "acknowledgement"
   "global_attrs" : {}
 }
