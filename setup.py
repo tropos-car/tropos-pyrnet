@@ -28,6 +28,7 @@ setup(
         "Click",
         "toolz",
         "addict",
+        "openpyxl",
         "trosat-base @ git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base",
     ]
 
