@@ -2,18 +2,23 @@
 
 # %% auto 0
 __all__ = ['campaign_pfx', 'DATA_URL', 'FNAME_FMT', 'SOLCONST', 'MAX_MISSING', 'MIN_GOOD', 'GEOD', 'read_hdcp2', 'get_xy_coords',
-           'read_pyrnet']
+           'read_pyrnet', 'read_calibration', 'get_pyrnet_mapping', 'meta_lookup']
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 1
+# %% ../../nbs/pyrnet/pyrnet.ipynb 2
 import pyproj
 import numpy as np
+import pandas as pd
 import xarray as xr
 from scipy.interpolate import interp1d
+from toolz import valfilter
+import pkg_resources as pkg_res
 
 # python -m pip install git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base
 from trosat import sunpos as sp
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 3
+from . import utils
+
+# %% ../../nbs/pyrnet/pyrnet.ipynb 5
 # campaign file name map for hdcp2 data
 campaign_pfx = {
     'eifel': 'hope',
@@ -34,7 +39,7 @@ MIN_GOOD = 85400 # Minimum allowed number of good records
 GEOD = pyproj.Geod(ellps='WGS84')
 
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 4
+# %% ../../nbs/pyrnet/pyrnet.ipynb 6
 def read_hdcp2( dt, fill_gaps=True, resample=False, campaign='hope_juelich' ):
     """
     Read HDCP2-formatted datafiles from the pyranometer network
@@ -84,7 +89,7 @@ def read_hdcp2( dt, fill_gaps=True, resample=False, campaign='hope_juelich' ):
     ds['gtrans']  = ds.rsds/ds.esd**2/SOLCONST/ds['mu0']
     return ds.rename({'rsds_flag':'qaflag','rsds':'ghi'})
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 5
+# %% ../../nbs/pyrnet/pyrnet.ipynb 7
 def get_xy_coords(lon, lat, lonc=None, latc=None):
     """
     Calculate Cartesian coordinates of network stations, relative to the mean
@@ -101,7 +106,7 @@ def get_xy_coords(lon, lat, lonc=None, latc=None):
     y = d*np.cos(np.deg2rad(az))
     return x,y
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 6
+# %% ../../nbs/pyrnet/pyrnet.ipynb 8
 # read pyrnet data and add coordinates
 def read_pyrnet(date, campaign):
     """ Read pyrnet data and add coordinates
@@ -111,3 +116,89 @@ def read_pyrnet(date, campaign):
     pyr['x'] = xr.DataArray(x,dims=('nstations'))
     pyr['y'] = xr.DataArray(y,dims=('nstations'))
     return pyr
+
+# %% ../../nbs/pyrnet/pyrnet.ipynb 18
+def read_calibration(cfile:str, cdate):
+    """
+    Parse calibration json file
+
+    Parameters
+    ----------
+    cfile: str
+        Path of the calibration.json
+    cdate: list, ndarray, or scalar of type float, datetime or datetime64
+        A representation of time. If float, interpreted as Julian date.
+    Returns
+    -------
+    dict
+        Calibration dictionary sorted by box number.
+    """
+    cdate = utils.to_datetime64(cdate)
+    calib = utils.read_json(cfile)
+    # parse calibration dates
+    cdates = pd.to_datetime(list(calib.keys())).values
+    # sort calib keys beginning with nearest
+    skeys = np.array(list(calib.keys()))[np.argsort(np.abs(cdate - cdates))]
+    # lookup calibration factors
+    for i, key in enumerate(skeys[::-1]):
+        if i==0:
+            c = calib[key].copy()
+            continue
+        isNone = lambda x: np.any([xi is None for xi in x])
+        isNotNone = lambda x: np.all([xi is not None for xi in x])
+        # update with newer calibrations which not include None values
+        c.update(valfilter(isNotNone, calib[key]))
+        # update only not None values
+        for k,v in valfilter(isNone, calib[key]).items():
+            newv = [c[k][i] if vi is None else vi for i,vi in enumerate(v)]
+            c.update({k:newv})
+    return c
+
+# %% ../../nbs/pyrnet/pyrnet.ipynb 24
+def get_pyrnet_mapping(fn:str, date):
+    """
+    Parse box - serial number mapping  json file
+
+    Parameters
+    ----------
+    fn: str
+        Path of the mapping.json
+    date: list, ndarray, or scalar of type float, datetime or datetime64
+        A representation of time. If float, interpreted as Julian date.
+    Returns
+    -------
+    dict
+        Calibration dictionary sorted by box number.
+    """
+    date = utils.to_datetime64(date)
+    pyrnetmap = utils.read_json(fn)
+    # parse key dates
+    # require sort for lookup later
+    cdates = pd.to_datetime(list(pyrnetmap.keys())).values
+    isort = np.argsort(cdates)
+
+    # lookup most recent key
+    skey = np.array(list(pyrnetmap.keys()))[isort][np.sum(date>cdates)-1]
+
+    return pyrnetmap[skey]
+
+# %% ../../nbs/pyrnet/pyrnet.ipynb 26
+def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
+    if cfile is None:
+        cfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_calibration.json")
+    if mapfile is None:
+        mapfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_station_map.json")
+
+    map = get_pyrnet_mapping(mapfile,date)
+    calib = read_calibration(cfile,date)
+
+    if serial is None and box is not None:
+        box=int(box)
+        return f"{box:03d}", map[f"{box:03d}"], calib[f"{box:03d}"]
+    elif serial is not None and box is None:
+        res = valfilter(lambda x: serial in x, map)
+        box = list(res.keys())[0]
+        serial = res[box]
+        return box,serial,calib[box]
+    else:
+        raise ValueError("At least one of [station,box] have to be specified.")
