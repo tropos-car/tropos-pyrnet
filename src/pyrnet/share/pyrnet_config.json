@@ -4,7 +4,9 @@
 // Additional conifg files are merged to the default with the
 //  'pyrnet processing' -c option.
 {
-  "output" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_{level}.c{collection:02d}.{sfx}",
+  "output_l1a" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_l1a.c{collection:02d}.{sfx}",
+  "output_l1b" : "pyrnet_{dt:%Y-%m-%d}_{campaign}_st{station:03d}_l1b.c{collection:02d}.{sfx}",
+
   // Meta information
   "campaign": "", // Campaign name
   "project": "", // Project name
