@@ -21,7 +21,12 @@ from . import utils
 from . import reports
 
 # logging setup
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s:%(message)s')
+logging.basicConfig(
+    filename='pyrnet.log',
+    encoding='utf-8',
+    level=logging.DEBUG,
+    format='%(asctime)s %(name)s %(levelname)s:%(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Local variables
@@ -356,8 +361,8 @@ def read_logger(
     adctime = sync_adc_time(rec_adc, rec_gprmc)
 
     config.update({
-        "sdate": pd.to_datetime(adctime[0]),
-        "edate": pd.to_datetime(adctime[-1]),
+        "sdate": adctime[0].item(),
+        "edate": adctime[-1].item(),
     })
 
     # 3. Apply appropriate binning to ADC values
