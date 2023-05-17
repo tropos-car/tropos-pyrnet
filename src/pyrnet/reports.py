@@ -70,7 +70,7 @@ def get_responses(
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 10
+# %% ../../nbs/pyrnet/reports.ipynb 11
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -163,13 +163,14 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 11
+# %% ../../nbs/pyrnet/reports.ipynb 12
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
     for box in lb:
         lbb = lb[box]
         N = lbb['date'].shape[0]
+        faccept = [1,2,3,4]
         dfb = pd.DataFrame(
             {"datestamp": lbb['date'],
              "Q00": box,
@@ -178,10 +179,10 @@ def parse_legacy_logbook(fn):
              "MainQ02[comment]": np.repeat("",N),
              "ExtraQ01[comment]": np.repeat("",N),
              "ExtraQ02[comment]": np.repeat("",N),
-             "MainQ01": [f"AO0{f}" for f in lbb['clean']],
-             "MainQ02": [f"AO0{f}" for f in lbb['level']],
-             "ExtraQ01": [f"AO0{f}" for f in lbb['clean_tilt']],
-             "ExtraQ02": [f"AO0{f}" for f in lbb['level_tilt']],
+             "MainQ01": [f"AO0{f}" if f in faccept else "None" for f in lbb['clean']],
+             "MainQ02": [f"AO0{f}" if f in faccept else "None" for f in lbb['level']],
+             "ExtraQ01": [f"AO0{f}" if f in faccept else "None" for f in lbb['clean_tilt']],
+             "ExtraQ02": [f"AO0{f}" if f in faccept else "None" for f in lbb['level_tilt']],
              }
         )
         if df is None:
@@ -191,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 16
+# %% ../../nbs/pyrnet/reports.ipynb 17
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -284,7 +285,7 @@ def parse_report(
     return results
 
 
-# %% ../../nbs/pyrnet/reports.ipynb 20
+# %% ../../nbs/pyrnet/reports.ipynb 21
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
