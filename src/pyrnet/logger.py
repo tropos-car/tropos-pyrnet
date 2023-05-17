@@ -9,6 +9,7 @@ from numpy.typing import NDArray,ArrayLike
 import re
 import gzip
 import numpy as np
+import pandas as pd
 import xarray as xr
 from scipy.stats import linregress
 import logging
