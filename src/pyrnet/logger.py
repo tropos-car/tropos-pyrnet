@@ -29,6 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # Local variables
 _nat      = np.datetime64('NaT','ms')
 _re_gprmc = re.compile('^(\d+,\d+ \d) \$GPRMC,(.*)(\*\w{2})$')
@@ -132,7 +133,7 @@ def read_records(fname: str,
     rec_gprmc: recarray
         The GPRMC GPS records
     '''
-    logging.info(f"Start reading records from file: {fname}")
+    logger.info(f"Start reading records from file: {fname}")
     date_of_measure = utils.to_datetime64(date_of_measure)
     # Read file, use errors='ignore' to skip non UTF-8 characters
     # non UTF-8 characters may arise in broken GPS strings from time to time
@@ -145,7 +146,7 @@ def read_records(fname: str,
 
     ##- skip almost empty files
     if len(lines)<20:
-        logging.info("Skip file, as number of records is < 20.")
+        logger.info("Skip file, as number of records is < 20.")
         return False,False
 
     # remove last line -> mostly damaged or empty
@@ -178,7 +179,7 @@ def read_records(fname: str,
             pass
     rec_adc   = np.array(rec_adc,dtype=np.uint16)
     rec_gprmc = np.array(rec_gprmc,dtype=dtype_gprmc).view(np.recarray)
-    logging.info("Done reading records from raw file.")
+    logger.info("Done reading records from raw file.")
     return rec_adc, rec_gprmc
 
 # %% ../../nbs/pyrnet/logger.ipynb 22
@@ -215,11 +216,11 @@ def sync_adc_time(rec_adc, rec_gprmc):
     a,b = linregress(t1,t2)[:2]
     t = rec_gprmc.time[0]+ta*a+b.astype('timedelta64[ms]')
 
-    logging.info('Sync ADC time to GPS Fit Summary:')
-    logging.info('|-- Drift  : {0:7.2f} [s/day]'.format( (1/a-1)*86400 ))
-    logging.info('|-- Slope  : {0:13.8f}'.format(a))
-    logging.info('|-- Offset : {0:7.2f} [s]'.format(b/1000))
-    logging.info('|-- Jitter : {0:7.2f} [ms]'.format(np.std(t2-(a*t1+b))))
+    logger.info('Sync ADC time to GPS Fit Summary:')
+    logger.info('|-- Drift  : {0:7.2f} [s/day]'.format( (1/a-1)*86400 ))
+    logger.info('|-- Slope  : {0:13.8f}'.format(a))
+    logger.info('|-- Offset : {0:7.2f} [s]'.format(b/1000))
+    logger.info('|-- Jitter : {0:7.2f} [ms]'.format(np.std(t2-(a*t1+b))))
     return t
 
 # %% ../../nbs/pyrnet/logger.ipynb 34
@@ -253,7 +254,7 @@ def adc_binning(rec_adc, time, bins=86400):
     uval, inv_idx, cnt = np.unique(it,
                                    return_inverse=True,
                                    return_counts=True)
-    logging.info(f"ADC records fill {len(uval)} bins of data.")
+    logger.info(f"ADC records fill {len(uval)} bins of data.")
     # Calculate average of sample values per bin
     # The first two columns of rec_adc will be omitted as they store the
     # internal measures for timing and battery (first two columns)
@@ -261,7 +262,7 @@ def adc_binning(rec_adc, time, bins=86400):
     for i in range(V.shape[1]):
         V[:,i] = np.bincount(inv_idx,weights=rec_adc[:,i+2])/cnt
     bintime = t0+ np.timedelta64(86400000,'ms')*uval.astype(np.float64)/bins
-    logging.info(f"ADC records span a time period from {bintime[0]} to {bintime[-1]}.")
+    logger.info(f"ADC records span a time period from {bintime[0]} to {bintime[-1]}.")
     return V, bintime
 
 # %% ../../nbs/pyrnet/logger.ipynb 36
@@ -354,7 +355,7 @@ def read_logger(
     rec_adc, rec_gprmc = read_records(fname=fname, date_of_measure=date_of_measure)
 
     if type(rec_adc)==bool or len(rec_gprmc.time)<3:
-        logging.debug("Failed to load the data from the file, because of not enough stable GPS data, or file is empty.")
+        logger.debug("Failed to load the data from the file, because of not enough stable GPS data, or file is empty.")
         return False
 
     # 2. Sync GPS to ADC time
@@ -374,7 +375,7 @@ def read_logger(
     # 5. Get Logbook maintenance quality flags
     key = f"{station:03d}"
     if key not in report:
-        logging.warning(f"No report for station {station} available.")
+        logger.warning(f"No report for station {station} available.")
     qc_main = reports.get_qcflag(
         qc_clean=report[key]['clean'],
         qc_level=report[key]['align']
@@ -422,13 +423,13 @@ def read_logger(
     count2volt = lambda x: 3.3 * np.float64(x)/1023.
     ds = xr.Dataset(
         data_vars={
-            "dflx_sw": (("time","station"), count2volt(adc_counts[:,2])[:,None]),
-            "dflx_sw_2": (("time","station"), count2volt(adc_counts[:,4])[:,None]),
-            "ta_atm": (("time","station"), 2.*count2volt(adc_counts[:,0])[:,None]),
-            "rh_atm": (("time","station"), 2.*count2volt(adc_counts[:,1])[:,None]),
-            "battery_voltage": (("time","station"), 2.*count2volt(adc_counts[:,3])[:,None]),
-            "lat": (("time","station"), lat[:,None]),
-            "lon": (("time","station"), lon[:,None]),
+            "dflx_sw": (("time","station"), count2volt(adc_counts[:,2])[:,None]), # [V]
+            "dflx_sw_2": (("time","station"), count2volt(adc_counts[:,4])[:,None]), # [V]
+            "ta_atm": (("time","station"), 253.15 + 20.*2.*count2volt(adc_counts[:,0])[:,None]), # [K]
+            "rh_atm": (("time","station"), 0.2*2.*count2volt(adc_counts[:,1])[:,None]), # [-]
+            "battery_voltage": (("time","station"), 2.*count2volt(adc_counts[:,3])[:,None]), # [V]
+            "lat": (("time","station"), lat[:,None]), # [degN]
+            "lon": (("time","station"), lon[:,None]), # [degE]
             "dflx_sw_qc": ("station", [qc_main]),
             "dflx_sw_2_qc": ("station", [qc_extra]),
             "szen": (("time","station"), szen[:,None]),
