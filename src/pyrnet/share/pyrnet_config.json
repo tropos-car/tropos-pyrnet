@@ -1,0 +1,25 @@
+{
+  "output" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_{level}.c{collection:02d}.{sfx}",
+  // Meta information
+  "campaign": "", // Campaign name
+  "user": "", // Processing User
+  "authors_measurements": "", // People involved in measurements
+  "authors_processing": "", // People involved in post-processing
+  "notes": "",
+  "collection": 1, //Processing collection
+  // Parsing config
+  "filename_parser": "Pyr(?P<ID>[0-9]+)_*", // Regular expression of filename with search group "ID" identifying the station id
+  "cfjson" : false, // json config file of netCDF attributes and encoding
+  "bins": 86400, // number of time-bins to average samples within a day
+  "stripminutes": 5, // Minutes to strip from data at start and end to avoid maintenance influence
+  "date_of_measure": "now", // datetime64 string (YYYY-MM-DDThh:mm) or "now to account for GPS rollover
+  // Configuration for online report requests, minimum information is "base_url"
+  "online": {
+    "base_url": "https://lgs-car.limesurvey.net/admin/remotecontrol",
+    "user_name": "BeRichter",
+    "user_id": 1, // user ID
+    "sid": 224783 // survey ID
+  },
+  // Additional global attributes to store in the output Dataset
+  "global_attrs" : {}
+}
