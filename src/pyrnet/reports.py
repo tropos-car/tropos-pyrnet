@@ -82,14 +82,13 @@ def read_logbook(lfile):
     cfile: string
         path and filename of loogbook file -> should be .xls file
         each sheet represent a maintenance periode.
-        First row of .xls file have to include column names:
-            box,date,clean,clean_tilt,level,level_tilt,Hangle,Vangle,notes
+        First row of .xls file have to include column names
+        *box*, *date*, *clean*, *clean_tilt*, *level*, *level_tilt*, *Hangle*, *Vangle*, *notes*
 
     Returns
     -------
-    logbook: dict{<stID>:recarray(dtype_log)}
-        dict of recarray for each station ID including quality flags from each
-        maintenance cicle.
+    logbook: dict
+        dict of recarray for each station ID including quality flags from each maintenance cicle.
     '''
     dtype_log =[
         ('box',         np.uint8),
