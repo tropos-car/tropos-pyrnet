@@ -12,7 +12,6 @@
         "authors_software": "Hartwig Deneke, Jonas Witthuhn, mailto:deneke@tropos.de",
         "creator_name"    : "{creator_name}",
         "project"         : "{project}",
-        "notes"           : "{notes}",
         "references"      : "https://doi.org/10.5194/amt-9-1153-2016",
         "standard_name_vocabulary" : "CF Standard Name Table v81",
         "conventions"     : "CF-1.10, ACDD-1.3",

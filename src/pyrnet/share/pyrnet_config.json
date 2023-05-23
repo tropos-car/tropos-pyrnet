@@ -13,7 +13,6 @@
   "creator_name": "", // Processing User
   "contributor_name": "", // Names of any contributing individual
   "contributor_role": "", // Role of any of the contributing individuals
-  "notes": "",
   "collection": 1, //Processing collection
   // Parsing config
   "filename_parser": "Pyr(?P<ID>[0-9]+)_*", // Regular expression of filename with search group "ID" identifying the station id
@@ -30,6 +29,6 @@
     "sid": 224783 // survey ID
   },
   // Additional global attributes to store in the output Dataset
-  // e.g.,  "comment" and "acknowledgement"
+  // e.g., "comment", "acknowledgement"
   "global_attrs" : {}
 }
