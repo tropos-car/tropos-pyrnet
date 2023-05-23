@@ -18,7 +18,7 @@
         "license"         : "For non-commercial use only"
   },
   "variables": {
-    "ta_atm": {
+    "ta": {
       "type": "u2",
       "attributes": {
         "units": "K",
@@ -34,7 +34,7 @@
         "zlib": true
       }
     },
-    "rh_atm": {
+    "rh": {
       "type": "u2",
       "attributes": {
         "units": "1",
@@ -65,7 +65,7 @@
         "zlib": true
       }
     },
-    "dflx_sw": {
+    "ghi": {
       "type": "u2",
       "attributes": {
         "units": "V",
@@ -81,7 +81,7 @@
         "zlib": true
       }
     },
-    "dflx_sw_2": {
+    "gti": {
       "type": "u2",
       "attributes": {
         "units": "V",
@@ -150,7 +150,7 @@
         "zlib": true
       }
     },
-    "dflx_sw_qc": {
+    "ghi_qc": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",
@@ -179,7 +179,7 @@
         "zlib": true
       }
     },
-    "dflx_sw_2_qc": {
+    "gti_qc": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",

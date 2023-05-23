@@ -421,12 +421,12 @@ def read_logger(
     vattrs, vencode = utils.get_attrs_enc(d)
 
     # add qc notes
-    vattrs = assoc_in(vattrs, ["dflx_sw_qc","note_general"], report[key]["note_general"])
-    vattrs = assoc_in(vattrs, ["dflx_sw_2_qc","note_general"], report[key]["note_general"])
-    vattrs = assoc_in(vattrs, ["dflx_sw_qc","note_clean"], report[key]["note_clean"])
-    vattrs = assoc_in(vattrs, ["dflx_sw_2_qc","note_clean"], report[key]["note_clean2"])
-    vattrs = assoc_in(vattrs, ["dflx_sw_qc","note_level"], report[key]["note_align"])
-    vattrs = assoc_in(vattrs, ["dflx_sw_2_qc","note_level"], report[key]["note_align2"])
+    vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], report[key]["note_general"])
+    vattrs = assoc_in(vattrs, ["gti_qc","note_general"], report[key]["note_general"])
+    vattrs = assoc_in(vattrs, ["ghi_qc","note_clean"], report[key]["note_clean"])
+    vattrs = assoc_in(vattrs, ["gti_qc","note_clean"], report[key]["note_clean2"])
+    vattrs = assoc_in(vattrs, ["ghi_qc","note_level"], report[key]["note_align"])
+    vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
 
     # 7. Calc sun position
     szen, sazi = sp.sun_angles(bintime, lat, lon)
@@ -436,15 +436,15 @@ def read_logger(
     count2volt = lambda x: 3.3 * np.float64(x)/1023.
     ds = xr.Dataset(
         data_vars={
-            "dflx_sw": (("time","station"), count2volt(adc_counts[:,2])[:,None]), # [V]
-            "dflx_sw_2": (("time","station"), count2volt(adc_counts[:,4])[:,None]), # [V]
-            "ta_atm": (("time","station"), 253.15 + 20.*2.*count2volt(adc_counts[:,0])[:,None]), # [K]
-            "rh_atm": (("time","station"), 0.2*2.*count2volt(adc_counts[:,1])[:,None]), # [-]
+            "ghi": (("time","station"), count2volt(adc_counts[:,2])[:,None]), # [V]
+            "gti": (("time","station"), count2volt(adc_counts[:,4])[:,None]), # [V]
+            "ta": (("time","station"), 253.15 + 20.*2.*count2volt(adc_counts[:,0])[:,None]), # [K]
+            "rh": (("time","station"), 0.2*2.*count2volt(adc_counts[:,1])[:,None]), # [-]
             "battery_voltage": (("time","station"), 2.*count2volt(adc_counts[:,3])[:,None]), # [V]
             "lat": (("time","station"), lat[:,None]), # [degN]
             "lon": (("time","station"), lon[:,None]), # [degE]
-            "dflx_sw_qc": ("station", [qc_main]),
-            "dflx_sw_2_qc": ("station", [qc_extra]),
+            "ghi_qc": ("station", [qc_main]),
+            "gti_qc": ("station", [qc_extra]),
             "szen": (("time","station"), szen[:,None]),
             "sazi": (("time","station"), sazi[:,None]),
             "esd": esd,
