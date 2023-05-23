@@ -111,8 +111,8 @@ def process_l1a(input_files,
               help="Path to the calibration file. If not specified, pyrnet_station_map.json from pyrnet/share/ is used.")
 @click.option("--radflux_varname",
               nargs=2,
-              default=["dflx_sw", "dflx_sw_2"],
-              help="Dataset variable name of radiation flux. The default is ['dflx_sw','dflx_sw_2'].")
+              default=["ghi", "gti"],
+              help="Dataset variable name of radiation flux. The default is ['ghi','gti'].")
 def process_l1b(input_files: list[str],
                 output_path: str,
                 config:list[str],
