@@ -28,15 +28,17 @@ def get_responses(
     ----------
     fn: str, path object or file-like object
         Any pandas readable representation of the LimeSurvey response export file
-        (.csv, sep=';', answer and question codes).
+        (.csv, sep=;, answer and question codes).
     online: dict
         Dictionary of information required to download the responses via limepy:
-        * base_url -> limesurvey remote_control url
-        * user_name -> account name
-        * password
-        * user_id -> ID of account user (usually 1)
-        * sid -> Survey ID
-        Minimal information stored in *online is the base_url, other information will then be filled via user input promt.
+            * base_url -> limesurvey remote_control url
+            * user_name -> account name
+            * password
+            * user_id -> ID of account user (usually 1)
+            * sid -> Survey ID
+
+        Minimal information stored in *online* is the base_url, other information will then be filled via user input promt.
+
     Returns
     -------
     pd.Dataframe
@@ -70,7 +72,7 @@ def get_responses(
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 11
+# %% ../../nbs/pyrnet/reports.ipynb 10
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -147,12 +149,10 @@ def read_logbook(lfile):
     for sheet in df.keys():# read all sheets from xls file
         sh = df[sheet].dropna(axis=0,how='all',subset=['date']) #remove empty lines
         sh = sh.dropna(axis=1,how='all') # remove empty columns
-#        print(sh)
         for row in sh.itertuples(index=True,name='Pandas'):
             A=np.zeros(1,dtype=dtype_log).view(np.recarray)
             for name,value in row._asdict().items():
                 key=_parse_name(name)
-#                print(key,value)
                 if key:
                     if dict(dtype_log)[key]==np.uint8 and np.isnan(value):
                         value=9
@@ -163,7 +163,7 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 12
+# %% ../../nbs/pyrnet/reports.ipynb 11
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
@@ -192,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 17
+# %% ../../nbs/pyrnet/reports.ipynb 15
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -225,14 +225,17 @@ def parse_report(
         date_of_maintenance: float | dt.datetime | np.datetime64 | None,
 ) -> dict:
     """
-    User pandas.read_csv (sep=';') to parse the survey report.
+    Use pandas.read_csv (sep=;) to parse the survey report.
 
     Parameters
     ----------
-   df: Dataframe
+    df: Dataframe
         LimeSurvey response parsed as pandas Dataframe.
     date_of_maintenance: float, datetime, datetime64 or None
-        A rough date of maintenance (at least day resolution). If float, interpreted as Julian day from 2000-01-01T12:00. If None, the most recent logbook entries will be parsed.
+        A rough date of maintenance (at least day resolution).
+        If float, interpreted as Julian day from 2000-01-01T12:00.
+        If None, the most recent logbook entries will be parsed.
+
     Returns
     -------
     dict
@@ -285,7 +288,7 @@ def parse_report(
     return results
 
 
-# %% ../../nbs/pyrnet/reports.ipynb 21
+# %% ../../nbs/pyrnet/reports.ipynb 19
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.

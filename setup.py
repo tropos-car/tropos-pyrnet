@@ -30,6 +30,20 @@ setup(
         "addict",
         "openpyxl",
         "trosat-base @ git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base",
-    ]
+    ],
+    extras_require={
+        "nbs": [
+            "jupyter",
+            "nbdev",
+            "nbformat"
+        ],
+        "docs": [
+            "sphinx",
+            "myst-parser",
+            "myst-nb",
+        ],
+    },
+
+
 
 )

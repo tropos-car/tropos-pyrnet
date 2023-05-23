@@ -123,8 +123,9 @@ def pairwise_distance_matrix( x: ArrayLike, y: ArrayLike ) -> NDArray:
 # %% ../../nbs/pyrnet/utils.ipynb 19
 def gauss_fwin_fwhm(fwhm: float, N: int = 86400) -> NDArray:
     """
-    # convert scale parameter to FWHM of Normal distribution
-    # see https://en.wikipedia.org/wiki/Full_width_at_half_maximum#Normal_distribution
+    Convert scale parameter to FWHM of Normal distribution see
+    [https://en.wikipedia.org/wiki/Full_width_at_half_maximum#Normal_distribution]
+
     Parameters
     ----------
     fwhm: float
@@ -135,7 +136,7 @@ def gauss_fwin_fwhm(fwhm: float, N: int = 86400) -> NDArray:
 
     Returns
     -------
-    w: ndarray
+    ndarray
         Frequency response of the gaussian window
     """
     f = 2.0*np.sqrt(2*np.log(2))
@@ -145,8 +146,9 @@ def gauss_fwin_fwhm(fwhm: float, N: int = 86400) -> NDArray:
 
 def gauss_fwin(J: float, N: int=86400) -> NDArray:
     """
-    # convert scale parameter to FWHM of Normal distribution
-    # see https://en.wikipedia.org/wiki/Full_width_at_half_maximum#Normal_distribution
+    Convert scale parameter to FWHM of Normal distribution see
+    [https://en.wikipedia.org/wiki/Full_width_at_half_maximum#Normal_distribution]
+
     Parameters
     ----------
     J: float
@@ -157,7 +159,7 @@ def gauss_fwin(J: float, N: int=86400) -> NDArray:
 
     Returns
     -------
-    w: ndarray
+    ndarray
         Frequency response of the gaussian window
     """
     fwhm = 60.*2**J
