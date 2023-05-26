@@ -6,7 +6,11 @@
 {
   "output_l1a" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_l1a.c{collection:02d}.{sfx}",
   "output_l1b" : "pyrnet_{dt:%Y-%m-%d}_{campaign}_st{station:03d}_l1b.c{collection:02d}.{sfx}",
-
+  "file_cfmeta" : null, // json config file of netCDF attributes and encoding
+  "file_calibration" : null, // json calibration file
+  "file_mapping": null, // box to pyranometer serial number mapping
+  "file_gti_angles": null, // box to tilted platform angles mapping
+  "file_site": null, // box to measurement site name mapping
   // Meta information
   "campaign": "", // Campaign name
   "project": "", // Project name
@@ -14,12 +18,16 @@
   "contributor_name": "", // Names of any contributing individual
   "contributor_role": "", // Role of any of the contributing individuals
   "collection": 1, //Processing collection
-  // Parsing config
+  // to_l1a config
   "filename_parser": "Pyr(?P<ID>[0-9]+)_*", // Regular expression of filename with search group "ID" identifying the station id
-  "cfjson" : false, // json config file of netCDF attributes and encoding
-  "bins": 86400, // number of time-bins to average samples within a day
-  "stripminutes": 5, // Minutes to strip from data at start and end to avoid maintenance influence
   "date_of_measure": "now", // datetime64 string (YYYY-MM-DDThh:mm) or "now to account for GPS rollover
+  "gti_angles": null, // key for gti angle lookup
+  "sites": null, //key for measurement site lookup
+  // to_l1b config
+  "l1bfreq": "1s", // pandas resample frequency description
+  "average_latlon": true, //average lat lon over maintenance interval, or not
+  "stripminutes": 5, // Minutes to strip from data at start and end to avoid maintenance influence
+  "radflux_varname": ["ghi","gti"], // variable names of the rad_flux variables -  same as in cfmeta
   // Configuration for online report requests, minimum information is "base_url"
   "online": {
     "base_url": "https://lgs-car.limesurvey.net/admin/remotecontrol",

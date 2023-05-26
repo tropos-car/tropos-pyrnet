@@ -8,9 +8,9 @@ import xarray as xr
 import pkg_resources as pkg_res
 
 from . import pyrnet
-from . import utils
-from . import logger
-from . import reports
+from . import data as pyrdata
+from . import utils as pyrutils
+from . import reports as pyrreports
 
 @click.group("pyrnet")
 def cli():
@@ -24,7 +24,7 @@ def process():
 @click.argument("input_files", nargs=-1)
 @click.argument("output_path", nargs=1)
 @click.option("--config","-c",
-              multiple=True,
+              nargs=1,
               help="Specify config files with override the default config.")
 @click.option("--report","-r",
               default="",
@@ -37,29 +37,19 @@ def process_l1a(input_files,
                 config,
                 report,
                 date_of_maintenance):
-
-    # read default config
-    fn = pkg_res.resource_filename(__package__, "share/pyrnet_config.json")
-    cfg = utils.read_json(fn)
-
-    # update config with input config files
-    for fn in config:
-        cfg.update(utils.read_json(fn))
-
-    # add default cfmeta if user doesn't specify
-    if not cfg['cfjson']:
-        fn_cfjson = pkg_res.resource_filename("pyrnet", "share/pyrnet_cfmeta_l1b.json")
-        cfg.update({"cfjson": fn_cfjson})
+    if config is not None:
+        config = pyrutils.read_json(config)
+    cfg = pyrdata.get_config(config)
 
     # filename parser
     parse = re.compile(cfg['filename_parser'])
 
     # parse maintenance reports
     if report=="" or report=="online":
-        df_report = reports.get_responses(fn=None, online=cfg["online"])
+        df_report = pyrreports.get_responses(fn=None, online=cfg["online"])
     else:
-        df_report = reports.get_responses(fn=report)
-    report = reports.parse_report(df_report,
+        df_report = pyrreports.get_responses(fn=report)
+    report = pyrreports.parse_report(df_report,
                                   date_of_maintenance=np.datetime64(date_of_maintenance))
 
     with click.progressbar(input_files,label='Processing') as files:
@@ -73,10 +63,9 @@ def process_l1a(input_files,
             except:
                 raise ValueError(f"Could not find station id in filename {filename} using regex {config['filename_parser']}.")
 
-            ds = logger.read_logger(
+            ds = pyrdata.to_l1a(
                 fname=fn,
                 station=stationid,
-                bins=cfg['bins'],
                 date_of_measure=np.datetime64(cfg['date_of_measure']),
                 report=report,
                 config=cfg,
@@ -86,8 +75,8 @@ def process_l1a(input_files,
             outfile = os.path.join(output_path, cfg['output_l1a'])
             outfile = outfile.format_map(
                 dict(
-                    startdt=pd.to_datetime(ds.time.values[0]),
-                    enddt=pd.to_datetime(ds.time.values[-1]),
+                    startdt=pd.to_datetime(ds.gpstime.values[0]),
+                    enddt=pd.to_datetime(ds.gpstime.values[-1]),
                     campaign=cfg['campaign'],
                     station=stationid,
                     collection=cfg['collection'],
@@ -101,70 +90,27 @@ def process_l1a(input_files,
 @click.argument("input_files", nargs=-1)
 @click.argument("output_path", nargs=1)
 @click.option("--config","-c",
-              multiple=True,
+              nargs=1,
               help="Specify config files with override the default config.")
-@click.option("--calibration",
-              nargs=1,
-              help="Path to the calibration file. If not specified, pyrnet_calibration.json from pyrnet/share/ is used.")
-@click.option("--mapping",
-              nargs=1,
-              help="Path to the calibration file. If not specified, pyrnet_station_map.json from pyrnet/share/ is used.")
-@click.option("--radflux_varname",
-              nargs=2,
-              default=["ghi", "gti"],
-              help="Dataset variable name of radiation flux. The default is ['ghi','gti'].")
 def process_l1b(input_files: list[str],
                 output_path: str,
-                config:list[str],
-                calibration: str|None,
-                mapping:str|None,
-                radflux_varname:list[str]):
+                config:str):
 
-    # read default config
-    fn = pkg_res.resource_filename(__package__, "share/pyrnet_config.json")
-    cfg = utils.read_json(fn)
-
-    # update config with input config files
-    for fn in config:
-        cfg.update(utils.read_json(fn))
-
-    # add default cfmeta if user doesn't specify
-    if not cfg['cfjson']:
-        fn_cfjson = pkg_res.resource_filename("pyrnet", "share/pyrnet_cfmeta_l1b.json")
-        cfg.update({"cfjson": fn_cfjson})
+    if config is not None:
+        config = pyrutils.read_json(config)
+    cfg = pyrdata.get_config(config)
 
     with click.progressbar(input_files,label='Processing') as files:
         for fn in files:
             filepath = os.path.abspath(fn)
             filename = os.path.basename(filepath)
-            # print(f"{filename}", flush=True)
-            ds = xr.open_dataset(filepath)
-            # check correct file
-            if ds.processing_level != "l1a":
-                raise ValueError(f"{fn} is not a l1a file.")
 
-            box = ds.station.values[0]
-            boxnumber, serial, cfac = pyrnet.meta_lookup(
-                ds.time.values[0],
-                box=box,
-                cfile=calibration,
-                mapfile=mapping,
+            ds = pyrdata.to_l1b(
+                filepath,
+                config=config,
+                global_attrs=cfg['global_attrs']
             )
-            # print(f"Box:{boxnumber}, Serials: {serial}, Calibration: {cfac}",flush=True)
-
-            # calibrate radiation flux with gain=300
-            for i,radflx in enumerate(radflux_varname):
-                ds[radflx].values = ds[radflx].values*1e6/(cfac[i]* 300) # V -> Wm-2
-                ds[radflx].attrs['units'] = "W m-2",
-                ds[radflx].encoding.update({
-                    'scale_factor': ds[radflx].encoding['scale_factor']*1e6/(cfac[i]* 300)
-                })
-
-
-            ds.attrs["processing_level"] = 'l1b'
-            now = pd.to_datetime(np.datetime64("now"))
-            ds.attrs["history"] = ds.history + f"{now.isoformat()}: Generated level l1a  by pyrnet version XX; " #TODO add version
-
+            box = ds.station.values[0]
             udays = np.unique(ds.time.values.astype("datetime64[D]"))
             for day in udays:
                 day = pd.to_datetime(day)
@@ -179,7 +125,7 @@ def process_l1b(input_files: list[str],
                         sfx="nc"
                     )
                 )
-                dsd.to_netcdf(outfile)
+                pyrdata.to_netcdf(dsd,outfile)
 
 cli.add_command(process)
 process.add_command(process_l1a)

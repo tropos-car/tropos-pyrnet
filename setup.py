@@ -35,7 +35,9 @@ setup(
         "nbs": [
             "jupyter",
             "nbdev",
-            "nbformat"
+            "nbformat",
+            "cfchecker",
+            "udunits2>=2.2.25"
         ],
         "docs": [
             "sphinx",
