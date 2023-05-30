@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import pyrnet
 sys.path.insert(0, os.path.abspath('../src/'))
 sys.path.insert(0, os.path.abspath('../nbs/'))
 
@@ -22,7 +23,7 @@ project = 'PyrNet'
 copyright = '2023, Jonas Witthuhn, Hartwig Deneke, Andreas Macke'
 author = 'Jonas Witthuhn, Hartwig Deneke, Andreas Macke'
 
-release = '0.0.1alpha' # TODO add versioneer
+release = pyrnet.__version__
 
 
 # -- General configuration ---------------------------------------------------
