@@ -9,6 +9,7 @@ Welcome to PyrNet's documentation!
    :caption: Documentation:
 
    pyrnet.md
+   campaigns.md
    howto.md
 
 
