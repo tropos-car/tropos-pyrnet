@@ -58,5 +58,33 @@
     "033": "PV20",
     "047": "PV21",
     "032": "PV22"
+  },
+  "mist2022": {
+    "043": "Patch06, Pyr1",
+    "044": "Patch06, Pyr2",
+    "086": "Patch06, Pyr3",
+    "046": "Patch19, Pyr1",
+    "004": "Patch19, Pyr2",
+    "032": "Patch19, Pyr3",
+    "054": "Patch21, Pyr1",
+    "012": "Patch21, Pyr2",
+    "024": "Patch21, Pyr3",
+    "015": "Patch31, Pyr1",
+    "001": "Patch31, Pyr2",
+    "026": "Patch31, Pyr3",
+    "035": "Patch33, Pyr1",
+    "087": "Patch33, Pyr2",
+    "010": "Patch33, Pyr3",
+    "049": "Patch59, Pyr1",
+    "038": "Patch59, Pyr2",
+    "058": "Patch59, Pyr3",
+    "014": "Patch61, Pyr1",
+    "055": "Patch61, Pyr2",
+    "060": "Patch61, Pyr3",
+    "033": "Patch68, Pyr1",
+    "047": "Patch68, Pyr2",
+    "053": "Patch68, Pyr3",
+    "003": "Reference",
+    "009": "Reference"
   }
 }
