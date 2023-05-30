@@ -9,6 +9,7 @@ Welcome to PyrNet's documentation!
    :caption: Documentation:
 
    pyrnet.md
+   howto.md
 
 
 Code Documentation
