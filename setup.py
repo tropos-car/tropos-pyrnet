@@ -1,8 +1,10 @@
 from setuptools import setup
+import versioneer
 
 setup(
     name = "pyrnet",
-    version = "0.0.1alpha",
+    version = versioneer.get_version(),
+    cmdclass= versioneer.get_cmdclass(),
     author = "Jonas Witthuhn",
     author_email= "witthuhn@tropos.de",
     license= "OSI Approved :: GNU General Public License v3 (GPLv3)",
