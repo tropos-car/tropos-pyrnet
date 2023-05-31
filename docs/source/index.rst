@@ -26,6 +26,7 @@ Code Documentation
    nbs/utils.ipynb
    nbs/logger.ipynb
    nbs/reports.ipynb
+   nbs/data.ipynb
    code_docs/autodocs.rst
 
 
