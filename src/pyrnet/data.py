@@ -222,6 +222,10 @@ def to_l1a(
     vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
 
     # add gti angles
+    # default horizontal
+    vattrs = assoc_in(vattrs, ["gti","hangle"], 0)
+    vattrs = assoc_in(vattrs, ["gti","vangle"], 0)
+    # update with angles from mapping file
     if config['gti_angles'] is not None:
         gti_angles = pyrutils.read_json(config['file_gti_angles'])[config['gti_angles']]
         if key in gti_angles:
