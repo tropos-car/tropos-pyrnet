@@ -402,6 +402,10 @@ def to_l1b(
 
     # calibrate radiation flux with gain=300
     for i, radflx in enumerate(config['radflux_varname']):
+        if cfac[i] is None:
+            # drop if calibration/instrument don't exist (probably secondary pyranometer).
+            ds_l1b = ds_l1b.drop_vars([var for var in ds_l1b if radflx in var])
+            continue
         ds_l1b[radflx].values = ds_l1b[radflx].values*1e6/(cfac[i]* 300) # V -> W m-2
         ds_l1b[radflx].attrs['units'] = "W m-2",
         ds_l1b[radflx].attrs.update({
