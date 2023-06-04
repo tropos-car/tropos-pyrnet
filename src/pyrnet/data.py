@@ -265,8 +265,8 @@ def to_l1a(
             "iadc": (("gpstime"), rec_gprmc.iadc)
         },
         coords={
-            "adctime": ("adctime", adctime),
-            "gpstime": ("gpstime", rec_gprmc.time),
+            "adctime": ("adctime", adctime.astype('timedelta64[ns]')),
+            "gpstime": ("gpstime", rec_gprmc.time.astype('datetime64[ns]')),
             "station": ("station", [station]),
         },
         attrs=gattrs
