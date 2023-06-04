@@ -71,7 +71,7 @@
         "units": "V",
         "long_name": "downwelling shortwave flux",
         "standard_name": "downwelling_shortwave_flux_in_air",
-        "scale_factor": 0.0032258064516129032,
+        "scale_factor": 1.075268817204301e-05,
         "add_offset": 0.0,
         "valid_range": [
           0,
@@ -87,7 +87,7 @@
         "units": "V",
         "long_name": "downwelling shortwave flux measured on secondary platform, might be tilted",
         "standard_name": "downwelling_shortwave_flux_in_air",
-        "scale_factor": 0.0032258064516129032,
+        "scale_factor": 1.075268817204301e-05,
         "add_offset": 0.0,
         "valid_range": [
           0,
