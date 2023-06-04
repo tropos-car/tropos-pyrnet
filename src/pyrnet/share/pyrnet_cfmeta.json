@@ -40,7 +40,7 @@
         "units": "1",
         "long_name": "air relative humidity",
         "standard_name": "relative_humidity",
-        "scale_factor": 0.0064516129032258064,
+        "scale_factor": 0.0012903225806451613,
         "add_offset": 0.0,
         "valid_range": [
           0,
