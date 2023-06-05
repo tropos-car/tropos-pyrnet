@@ -4,13 +4,22 @@ import os.path
 import click
 import numpy as np
 import pandas as pd
-import xarray as xr
-import pkg_resources as pkg_res
+import logging
 
 from . import pyrnet
 from . import data as pyrdata
 from . import utils as pyrutils
 from . import reports as pyrreports
+
+
+# logging setup
+logging.basicConfig(
+    filename='pyrnet.log',
+    encoding='utf-8',
+    level=logging.DEBUG,
+    format='%(asctime)s %(name)s %(levelname)s:%(message)s'
+)
+logger = logging.getLogger(__name__)
 
 @click.group("pyrnet")
 def cli():
@@ -56,12 +65,14 @@ def process_l1a(input_files,
         for fn in files:
             filepath = os.path.abspath(fn)
             filename = os.path.basename(filepath)
-            # print(f"{filename}",flush=True)
+            logging.info(f"start raw->l1a: {filename}")
+
             m = parse.match(filename)
             try:
                 stationid = int(m.group('ID'))
             except:
                 raise ValueError(f"Could not find station id in filename {filename} using regex {config['filename_parser']}.")
+            logging.info(f"found station number {stationid}")
 
             ds = pyrdata.to_l1a(
                 fname=fn,
@@ -84,6 +95,7 @@ def process_l1a(input_files,
                 )
             )
             ds.to_netcdf(outfile)
+            logging.info(f"l1a saved to {outfile}")
 
 
 @click.command("l1b")
@@ -104,6 +116,7 @@ def process_l1b(input_files: list[str],
         for fn in files:
             filepath = os.path.abspath(fn)
             filename = os.path.basename(filepath)
+            logging.info(f"start l1a->l1b: {filename}")
 
             ds = pyrdata.to_l1b(
                 filepath,
@@ -114,6 +127,7 @@ def process_l1b(input_files: list[str],
             udays = np.unique(ds.time.values.astype("datetime64[D]"))
             for day in udays:
                 day = pd.to_datetime(day)
+                logging.info(f"process day {day:%Y-%m-%d}")
                 dsd = ds.sel(time=f"{day:%Y-%m-%d}")
                 outfile = os.path.join(output_path, cfg['output_l1b'])
                 outfile = outfile.format_map(
@@ -126,6 +140,7 @@ def process_l1b(input_files: list[str],
                     )
                 )
                 pyrdata.to_netcdf(dsd,outfile)
+                logging.info(f"l1b saved to {outfile}")
 
 cli.add_command(process)
 process.add_command(process_l1a)

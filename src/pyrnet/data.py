@@ -77,9 +77,11 @@ def merge_ds(ds1,ds2):
     """Merge two datasets along the time dimension.
     """
     if ds1.time.equals(ds2.time):
+        logging.info("Overwrite existing file.")
         return ds2
+    logging.info("Merge with existing file.")
 
-    ## overwrite non time dependend variables
+    ## overwrite non time dependent variables
     overwrite_vars = [ v for v in ds1 if "time" not in ds1[v].dims]
 
     ## merge both datasets
@@ -201,7 +203,7 @@ def to_l1a(
     adctime = pyrlogger.get_adc_time(rec_adc)
 
     # ADC to Volts
-    # Drop time and internal batter sensor output (columns 0 and 1)
+    # Drop time and internal battery sensor output (columns 0 and 1)
     adc_volts = 3.3 * rec_adc[:,2:] / 1023.
 
     # 2. Get Logbook maintenance quality flags
@@ -356,12 +358,15 @@ def to_l1b(
     ds_l1b["time"].encoding.update({
         "units": f"seconds since {np.datetime_as_string(ds_l1b.time.data[0], unit='D')}T00:00Z",
     })
+    logger.info(f"Dataset time coverage before strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
     # 4. Drop first and last <stripminutes> minutes of data to avoid bad data due to maintenance
     stripminutes = np.timedelta64(int(config['stripminutes']), 'm')
     tslice = slice(ds_l1b.time.values[0] + stripminutes,
                    ds_l1b.time.values[-1] - stripminutes)
     ds_l1b = ds_l1b.sel(time=tslice)
+    logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
+
 
     # 5. resample to desired resolution
     ds_l1b = pyrlogger.resample_mean(ds_l1b, freq=config['l1bfreq'])
