@@ -85,6 +85,9 @@ def process_l1a(input_files,
                 config=cfg,
                 global_attrs=cfg['global_attrs']
             )
+            if ds is None:
+                logging.warning(f"Skip {filename}.")
+                continue
 
             outfile = os.path.join(output_path, cfg['output_l1a'])
             outfile = outfile.format_map(
