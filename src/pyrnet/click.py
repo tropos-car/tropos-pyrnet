@@ -39,8 +39,7 @@ def process():
               default="",
               help="Specify the maintenance report file. If empty or 'online' it attempts to request it online.")
 @click.option("--date_of_maintenance",
-              default="now",
-              help="Specify date of maintenance as datetime64 string ('YYYY-MM-DD'). The default is 'now' - the most recent reports.")
+              help="Specify date of maintenance as datetime64 string ('YYYY-MM-DD'). If not specified, try to retrieve from data.")
 def process_l1a(input_files,
                 output_path,
                 config,
@@ -58,7 +57,11 @@ def process_l1a(input_files,
         df_report = pyrreports.get_responses(fn=None, online=cfg["online"])
     else:
         df_report = pyrreports.get_responses(fn=report)
-    report = pyrreports.parse_report(df_report,
+
+    if date_of_maintenance is None:
+        report = df_report
+    else:
+        report = pyrreports.parse_report(df_report,
                                   date_of_maintenance=np.datetime64(date_of_maintenance))
 
     with click.progressbar(input_files,label='Processing') as files:

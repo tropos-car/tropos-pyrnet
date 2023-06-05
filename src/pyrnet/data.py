@@ -155,7 +155,7 @@ def to_l1a(
         date_of_measure : np.datetime64 = np.datetime64("now"),
         config: dict|None = None,
         global_attrs: dict|None = None
-) -> xr.Dataset:
+) -> xr.Dataset|None:
     """
     Read logger raw file and parse it to xarray Dataset. Thereby, attributes and names are defined via cfmeta.json file and sun position values are calculated and added.
 
@@ -197,7 +197,7 @@ def to_l1a(
 
     if type(rec_adc)==bool or len(rec_gprmc.time)<3:
         logger.debug("Failed to load the data from the file, because of not enough stable GPS data, or file is empty.")
-        return False
+        return None
 
     # Get ADC time
     adctime = pyrlogger.get_adc_time(rec_adc)
@@ -208,6 +208,11 @@ def to_l1a(
 
     # 2. Get Logbook maintenance quality flags
     key = f"{station:03d}"
+    if isinstance(report, pd.DataFrame):
+        logger.info(f"Parsing report at date {rec_gprmc.time[-1]}")
+        report = pyrreports.parse_report(report,
+                                date_of_maintenance=rec_gprmc.time[-1])
+
     if key not in report:
         logger.warning(f"No report for station {station} available.")
     qc_main = pyrreports.get_qcflag(
