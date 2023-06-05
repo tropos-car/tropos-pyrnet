@@ -362,9 +362,8 @@ def to_l1b(
 
     # 4. Drop first and last <stripminutes> minutes of data to avoid bad data due to maintenance
     stripminutes = np.timedelta64(int(config['stripminutes']), 'm')
-    tslice = slice(ds_l1b.time.values[0] + stripminutes,
-                   ds_l1b.time.values[-1] - stripminutes)
-    ds_l1b = ds_l1b.sel(time=tslice)
+    ds_l1b = ds_l1b.isel(time=ds_l1b.time>ds_l1b.time.values[0] + stripminutes)
+    ds_l1b = ds_l1b.isel(time=ds_l1b.time<ds_l1b.time.values[-1] - stripminutes)
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
 
