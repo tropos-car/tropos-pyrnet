@@ -32,6 +32,7 @@ setup(
         "addict",
         "openpyxl",
         "xlrd",
+        "parse",
         "trosat-base @ git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base",
     ],
     extras_require={
