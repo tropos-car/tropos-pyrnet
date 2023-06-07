@@ -269,7 +269,7 @@ def to_l1a(
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
             "ghi_qc": ("station", [qc_main]),
             "gti_qc": ("station", [qc_extra]),
-            "iadc": (("gpstime"), rec_gprmc.iadc)
+            "iadc": (("gpstime", "station"), rec_gprmc.iadc[:,None])
         },
         coords={
             "adctime": ("adctime", adctime.astype('timedelta64[ns]')),
@@ -350,7 +350,7 @@ def to_l1b(
     adctime = pyrlogger.sync_adc_time(
         adctime = ds_l1a.adctime.values,
         gpstime = ds_l1a.gpstime.values,
-        iadc = ds_l1a.iadc.values.astype(int)
+        iadc = ds_l1a.iadc.squeeze().values.astype(int)
     )
 
     # 3. Create new dataset (l1b)
