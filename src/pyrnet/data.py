@@ -103,7 +103,8 @@ def to_netcdf(ds,fname):
 
     # save to netCDF4
     ds = update_coverage_meta(ds, timevar="time")
-    ds.to_netcdf(fname)
+    ds.to_netcdf(fname,
+                 encoding={'time':{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
 # %% ../../nbs/pyrnet/data.ipynb 10
 def get_config(config: dict|None = None) -> dict:
@@ -298,6 +299,7 @@ def to_l1a(
         ds[k].encoding = v
 
     ds["gpstime"].encoding.update({
+        "dtype": 'f8',
         "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
     })
     ds["adctime"].encoding.update({
@@ -320,26 +322,6 @@ def to_l1b(
     if global_attrs is not None:
         gattrs.update(global_attrs)
 
-    # lookup cfconfig
-    # parse the json file
-    cfdict = pyrutils.read_json(config["file_cfmeta"])
-
-    # get global attributes:
-    gattrs = cfdict['attributes']
-
-    # apply config
-    gattrs = {k:v.format_map(config) for k,v in gattrs.items()}
-
-    # add additional global attrs
-    gattrs.update(global_attrs)
-
-    # get variable attributes
-    d = pyrutils.get_var_attrs(cfdict)
-
-    # split encoding attributes
-    vattrs, vencode = pyrutils.get_attrs_enc(d)
-
-
     # 1. Load l1a data
     ds_l1a = xr.open_dataset(fname)
     # check correct file
@@ -361,6 +343,7 @@ def to_l1b(
     ds_l1b = ds_l1b.drop_vars("adctime")
 
     ds_l1b["time"].encoding.update({
+        "dtype": 'float64',
         "units": f"seconds since {np.datetime_as_string(ds_l1b.time.data[0], unit='D')}T00:00Z",
     })
     logger.info(f"Dataset time coverage before strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")

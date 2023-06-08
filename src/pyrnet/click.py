@@ -100,7 +100,7 @@ def process_l1a(input_files,
                     sfx="nc"
                 )
             )
-            ds.to_netcdf(outfile)
+            ds.to_netcdf(outfile, encoding={'gpstime':{'dtype':'float64'}})
             logging.info(f"l1a saved to {outfile}")
 
 
