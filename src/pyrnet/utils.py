@@ -12,6 +12,7 @@ import jstyleson as json
 from addict import Dict as adict
 from operator import itemgetter
 from toolz import keyfilter
+import pyproj
 
 # python -m pip install git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base
 import trosat.sunpos as sp
@@ -105,6 +106,8 @@ def get_xy_coords(lon, lat, lonc=None, latc=None):
     Calculate Cartesian coordinates of network stations, relative to the mean
     lon/lat of the stations
     """
+    GEOD = pyproj.Geod(ellps='WGS84')
+
     n  = len(lon)
     if lonc is None:
         lonc = lon.mean()
