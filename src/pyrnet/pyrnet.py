@@ -77,6 +77,9 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
     """Parse Thredds server files and return list of filenames matching the date, station, campaign and collection configuration."""
     date = pyrutils.to_datetime64(date)
 
+    if not isinstance(station, Iterable):
+        station=[station]
+
     fn = pkg_res.resource_filename("pyrnet", "share/pyrnet_config.json")
     pyrcfg = pyrutils.read_json(fn)
 
@@ -190,11 +193,31 @@ def read_hdcp2( dt, fill_gaps=True, campaign='hope_juelich'):
     return ds.rename({'rsds_flag':'qaflag','rsds':'ghi'})
 
 # %% ../../nbs/pyrnet/pyrnet.ipynb 14
-def read_thredds(dates, *, stations, campaign, lvl, collection):
-    """ read PyrNet data from Thredds and merge, currently only l1b data
+def read_thredds(dates, *, stations, campaign, lvl='l1b', collection=None):
     """
+    Read PyrNet data (processed with pyrnet package) from the TROPOS thredds server. Returns one xarray Dataset merged to match the dates and stations input.
+    Parameters
+    ----------
+    dates: list, ndarray, or scalar of type float, datetime or datetime64
+        A representation of time. If float, interpreted as Julian date.
+    stations: list, ndarray, or scalar of type int
+        PyrNet station numbers.
+    campaign: str
+        Campaign identifier.
+    lvl: str
+        Data processing level -> 'l1a', 'l1b'. The default is 'l1b'.
+    collection: int or None
+        Collection number. If None, the latest available collection is looked up. The default is None.
+
+    Returns
+    -------
+    xarray.Dataset
+        Merged Dataset including all dates and stations specified by the input.
+    """
+
     if not isinstance(dates,Iterable):
         dates = [dates]
+
     fnames = []
     for date in dates:
         fnames.extend(
@@ -206,6 +229,8 @@ def read_thredds(dates, *, stations, campaign, lvl, collection):
                 collection=collection
             )
         )
+    fnames = np.unique(fnames)
+
     url = DATA_URL.format(dt=pd.to_datetime(dates[0]), campaign=campaign)
     url += f"{lvl}/"
     urls = [url+fn for fn in fnames]
@@ -215,10 +240,7 @@ def read_thredds(dates, *, stations, campaign, lvl, collection):
         ds = xr.merge((ds,xr.open_dataset(url)))
     return ds
 
-# ds
-
-
-# %% ../../nbs/pyrnet/pyrnet.ipynb 21
+# %% ../../nbs/pyrnet/pyrnet.ipynb 17
 # read pyrnet data and add coordinates
 def read_pyrnet(date, campaign):
     """ Read pyrnet data and add coordinates
@@ -229,7 +251,7 @@ def read_pyrnet(date, campaign):
     pyr['y'] = xr.DataArray(y,dims=('nstations'))
     return pyr
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 31
+# %% ../../nbs/pyrnet/pyrnet.ipynb 27
 def read_calibration(cfile:str, cdate):
     """
     Parse calibration json file
@@ -266,7 +288,7 @@ def read_calibration(cfile:str, cdate):
             c.update({k:newv})
     return c
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 37
+# %% ../../nbs/pyrnet/pyrnet.ipynb 33
 def get_pyrnet_mapping(fn:str, date):
     """
     Parse box - serial number mapping  json file
@@ -294,7 +316,7 @@ def get_pyrnet_mapping(fn:str, date):
 
     return pyrnetmap[skey]
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 39
+# %% ../../nbs/pyrnet/pyrnet.ipynb 35
 def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
     if cfile is None:
         cfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_calibration.json")
