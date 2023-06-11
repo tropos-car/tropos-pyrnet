@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from scipy.interpolate import interp1d
-from toolz import valfilter, cons, merge_with
+from toolz import valfilter, cons, merge, merge_with
 import pkg_resources as pkg_res
 
 # python -m pip install git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base
@@ -271,10 +271,14 @@ def read_calibration(cfile:str, cdate):
     calib = pyrutils.read_json(cfile)
     # parse calibration dates
     cdates = pd.to_datetime(list(calib.keys())).values
+
     # sort calib keys beginning with nearest
-    skeys = np.array(list(calib.keys()))[np.argsort(np.abs(cdate - cdates))]
+    # skeys = np.array(list(calib.keys()))[np.argsort(np.abs(cdate - cdates))][::-1]
+    # lookup most recent key
+    isort = np.argsort(cdates)
+    skeys = np.array(list(calib.keys()))[isort][:np.sum(cdate>cdates)]
     # lookup calibration factors
-    for i, key in enumerate(skeys[::-1]):
+    for i, key in enumerate(skeys):
         if i==0:
             c = calib[key].copy()
             continue
@@ -312,9 +316,10 @@ def get_pyrnet_mapping(fn:str, date):
     isort = np.argsort(cdates)
 
     # lookup most recent key
-    skey = np.array(list(pyrnetmap.keys()))[isort][np.sum(date>cdates)-1]
+    skeys = np.array(list(pyrnetmap.keys()))[isort][:np.sum(date>cdates)]
 
-    return pyrnetmap[skey]
+    # merge and update with the most recent map
+    return  merge([pyrnetmap[key] for key in skeys])
 
 # %% ../../nbs/pyrnet/pyrnet.ipynb 35
 def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
