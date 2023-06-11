@@ -12,6 +12,7 @@ import xarray as xr
 import logging
 from toolz import assoc_in
 import pkg_resources as pkg_res
+import warnings
 
 from trosat import sunpos as sp
 
@@ -216,14 +217,27 @@ def to_l1a(
 
     if key not in report:
         logger.warning(f"No report for station {station} available.")
-    qc_main = pyrreports.get_qcflag(
-        qc_clean=report[key]['clean'],
-        qc_level=report[key]['align']
-    )
-    qc_extra = pyrreports.get_qcflag(
-        qc_clean=report[key]['clean2'],
-        qc_level=report[key]['align2']
-    )
+        warnings.warn(f"No report for station {station} available.")
+        qc_main = pyrreports.get_qcflag(4,3)
+        qc_extra = pyrreports.get_qcflag(4,3)
+        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], "No maintenance report!")
+        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], "No maintenance report!")
+    else:
+        qc_main = pyrreports.get_qcflag(
+            qc_clean=report[key]['clean'],
+            qc_level=report[key]['align']
+        )
+        qc_extra = pyrreports.get_qcflag(
+            qc_clean=report[key]['clean2'],
+            qc_level=report[key]['align2']
+        )
+        # add qc notes
+        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["ghi_qc","note_clean"], report[key]["note_clean"])
+        vattrs = assoc_in(vattrs, ["gti_qc","note_clean"], report[key]["note_clean2"])
+        vattrs = assoc_in(vattrs, ["ghi_qc","note_level"], report[key]["note_align"])
+        vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -238,13 +252,7 @@ def to_l1a(
         if key in sites:
             gattrs.update({ "site" : sites[key]})
 
-    # add qc notes
-    vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], report[key]["note_general"])
-    vattrs = assoc_in(vattrs, ["gti_qc","note_general"], report[key]["note_general"])
-    vattrs = assoc_in(vattrs, ["ghi_qc","note_clean"], report[key]["note_clean"])
-    vattrs = assoc_in(vattrs, ["gti_qc","note_clean"], report[key]["note_clean2"])
-    vattrs = assoc_in(vattrs, ["ghi_qc","note_level"], report[key]["note_align"])
-    vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
+
 
     # add gti angles
     # default horizontal
