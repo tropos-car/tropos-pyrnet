@@ -67,7 +67,7 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
         scale_factor = ds[var].encoding['scale_factor']
         scale_factor_mod = int((int_limit-1)/valid_range[1])
         ds[var].encoding.update({
-            "scale_factor": scale_factor * scale_factor_mod,
+            "scale_factor": scale_factor / scale_factor_mod,
             "_FillValue": int_limit,
             "valid_range": valid_range * scale_factor_mod
         })
@@ -318,7 +318,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 44
+# %% ../../nbs/pyrnet/data.ipynb 46
 def to_l1b(
         fname: str,
         *,
