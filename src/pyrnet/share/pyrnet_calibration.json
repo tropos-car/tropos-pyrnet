@@ -1,14 +1,14 @@
 // Mapping PyrNet box number to calibration factor
 // [main,secondary]
 {
-  // Factory calibration
+  // Factory calibration, setup for HOPE juelich
   "2013-01": {
     "001": [7.48,null],
     "002":[7.41,null],
     "003":[7.51,null],
     "004":[7.28,null],
     "005":[7.25,null],
-    "006":[6.71,null],
+    "006":[7.41,null],
     "007":[7.23,null],
     "008":[7.58,null],
     "009":[7.46,null],
@@ -30,8 +30,8 @@
     "025":[7.22,null],
     "026":[7.35,null],
     "027":[null,null],
-    "028":[7.21,null],
-    "029":[7.61,null],
+    "028":[7.50,null],
+    "029":[7.21,null],
     "030":[7.22,null],
     "031":[7.23,null],
     "032":[7.49,null],
@@ -105,8 +105,21 @@
     "099":[7.51,null],
     "100":[7.32,null]
   },
+  "2013-04-25": {
+    "028": [7.21,null],
+    "029": [null,null]
+  },
+  "2013-05-02": {
+    "029": [7.06,null]
+  },
+  "2013-06-06": {
+    "006": [6.71,null]
+  },
+  "2017-01-01": {
+    "029": [7.61,null]
+  },
   // Calibration on Tropos roof for pascal
-  "2017-06": {
+  "2017-01-02": {
     "024": [7.26,null],
     "025": [7.06,null],
     "026": [7.37,null],
@@ -123,8 +136,8 @@
     "043": [7.15,null],
     "044": [6.9,null]
   },
-  // Calibration for MetPVNet
-  "2019-04": {
+  // Calibration for MetPVNet (done 04-2019)
+  "2018-08": {
     "001": [7.73,6.98],
     "004": [7.62,8.23],
     "005": [7.48,6.37],
