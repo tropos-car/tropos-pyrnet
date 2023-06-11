@@ -258,7 +258,7 @@ def to_l1a(
             vattrs = assoc_in(vattrs, ["gti","vangle"], gti_angles[key][1])
 
     if adc_volts.shape[1]<5: # gti data is not available
-        adc_volts = np.concatenate((adc_volts,-1*np.ones(adc_volts.shape[0])),axis=1)
+        adc_volts = np.concatenate((adc_volts,-1*np.ones(adc_volts.shape[0])[:,None]),axis=1)
 
     # 8. Make xarray Dataset
     ds = xr.Dataset(
@@ -281,9 +281,6 @@ def to_l1a(
         },
         attrs=gattrs
     )
-
-
-
 
     # drop ocurance of douplicate gps values
     ds = ds.drop_duplicates("gpstime")
