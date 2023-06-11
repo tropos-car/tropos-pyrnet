@@ -270,7 +270,7 @@ def read_calibration(cfile:str, cdate):
     cdate = pyrutils.to_datetime64(cdate)
     calib = pyrutils.read_json(cfile)
     # parse calibration dates
-    cdates = pd.to_datetime(list(calib.keys())).values
+    cdates = pd.to_datetime(list(calib.keys()), yearfirst=True).values
 
     # sort calib keys beginning with nearest
     # skeys = np.array(list(calib.keys()))[np.argsort(np.abs(cdate - cdates))][::-1]
@@ -312,7 +312,7 @@ def get_pyrnet_mapping(fn:str, date):
     pyrnetmap = pyrutils.read_json(fn)
     # parse key dates
     # require sort for lookup later
-    cdates = pd.to_datetime(list(pyrnetmap.keys())).values
+    cdates = pd.to_datetime(list(pyrnetmap.keys()), yearfirst=True).values
     isort = np.argsort(cdates)
 
     # lookup most recent key

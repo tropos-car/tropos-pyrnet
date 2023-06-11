@@ -2,7 +2,7 @@
 // [main,secondary]
 {
   // Factory calibration, setup for HOPE juelich
-  "2013-01": {
+  "2013-01-01": {
     "001": [7.48,null],
     "002":[7.41,null],
     "003":[7.51,null],
@@ -137,7 +137,7 @@
     "044": [6.9,null]
   },
   // Calibration for MetPVNet (done 04-2019)
-  "2018-08": {
+  "2018-08-01": {
     "001": [7.73,6.98],
     "004": [7.62,8.23],
     "005": [7.48,6.37],
