@@ -32,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# %% ../../nbs/pyrnet/data.ipynb 4
+# %% ../../nbs/pyrnet/data.ipynb 5
 def update_coverage_meta(ds,timevar='time'):
     """Update global attributes related to geospatial and time coverage
     """
@@ -56,7 +56,7 @@ def update_coverage_meta(ds,timevar='time'):
     return ds
 
 
-# %% ../../nbs/pyrnet/data.ipynb 5
+# %% ../../nbs/pyrnet/data.ipynb 6
 def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     """ Stretch variable resolution to full integer size,
     to not lose resolution after averaging ADC count data."""
@@ -73,7 +73,7 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
         })
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 7
+# %% ../../nbs/pyrnet/data.ipynb 8
 def merge_ds(ds1,ds2):
     """Merge two datasets along the time dimension.
     """
@@ -92,7 +92,7 @@ def merge_ds(ds1,ds2):
     ds_new.attrs.update({'merged':1})
     return ds_new
 
-# %% ../../nbs/pyrnet/data.ipynb 8
+# %% ../../nbs/pyrnet/data.ipynb 9
 def to_netcdf(ds,fname):
     """xarray to netcdf, but merge if exist
     """
@@ -107,7 +107,7 @@ def to_netcdf(ds,fname):
     ds.to_netcdf(fname,
                  encoding={'time':{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
-# %% ../../nbs/pyrnet/data.ipynb 10
+# %% ../../nbs/pyrnet/data.ipynb 11
 def get_config(config: dict|None = None) -> dict:
     """Read default config and merge with input config
     """
@@ -148,7 +148,7 @@ def get_cfmeta(config: dict|None = None) -> dict:
     return gattrs ,vattrs, vencode
 
 
-# %% ../../nbs/pyrnet/data.ipynb 16
+# %% ../../nbs/pyrnet/data.ipynb 17
 def to_l1a(
         fname : str,
         *,
@@ -271,8 +271,8 @@ def to_l1a(
     # 8. Make xarray Dataset
     ds = xr.Dataset(
         data_vars={
-            "ghi": (("adctime","station"), adc_volts[:,2][:,None]), # [V]
-            "gti": (("adctime","station"), adc_volts[:,4][:,None]), # [V]
+            "ghi": (("adctime","station"), adc_volts[:,2][:,None] / 300.), # [V]
+            "gti": (("adctime","station"), adc_volts[:,4][:,None] / 300.), # [V]
             "ta": (("adctime","station"), 253.15 + 20.*2.*adc_volts[:,0][:,None]), # [K]
             "rh": (("adctime","station"), 0.2*2.*adc_volts[:,1][:,None]), # [-]
             "battery_voltage": (("adctime","station"), 2.*adc_volts[:,3][:,None]), # [V]
@@ -318,7 +318,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 37
+# %% ../../nbs/pyrnet/data.ipynb 44
 def to_l1b(
         fname: str,
         *,
@@ -427,7 +427,7 @@ def to_l1b(
             # drop if calibration/instrument don't exist (probably secondary pyranometer).
             ds_l1b = ds_l1b.drop_vars([var for var in ds_l1b if radflx in var])
             continue
-        ds_l1b[radflx].values = ds_l1b[radflx].values*1e6/(cfac[i]* 300) # V -> W m-2
+        ds_l1b[radflx].values = ds_l1b[radflx].values*1e6/(cfac[i]) # V -> W m-2
         ds_l1b[radflx].attrs['units'] = "W m-2",
         ds_l1b[radflx].attrs.update({
             "units": "W m-2",
@@ -435,7 +435,7 @@ def to_l1b(
             "calibration_factor": cfac[i]
         })
         ds_l1b[radflx].encoding.update({
-            'scale_factor': ds_l1b[radflx].encoding['scale_factor']*1e6/(cfac[i]* 300)
+            'scale_factor': ds_l1b[radflx].encoding['scale_factor']*1e6/(cfac[i])
         })
 
 
