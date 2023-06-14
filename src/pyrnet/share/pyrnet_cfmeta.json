@@ -102,6 +102,7 @@
       "attributes": {
         "units": "-",
         "long_name": "PyrNet unit box number",
+        "_FillValue": 255,
         "zlib": true
       }
     },
