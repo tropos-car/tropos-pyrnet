@@ -61,6 +61,8 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     """ Stretch variable resolution to full integer size,
     to not lose resolution after averaging ADC count data."""
     for var in ds:
+        if "scale_factor" not in ds[var].encoding:
+            continue
         dtype = ds[var].encoding['dtype']
         valid_range = ds[var].valid_range
         int_limit = np.iinfo(dtype).max
