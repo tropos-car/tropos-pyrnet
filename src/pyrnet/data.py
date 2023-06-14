@@ -69,6 +69,8 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
         ds[var].encoding.update({
             "scale_factor": scale_factor / scale_factor_mod,
             "_FillValue": int_limit,
+        })
+        ds[var].attrs.update({
             "valid_range": valid_range * scale_factor_mod
         })
     return ds
