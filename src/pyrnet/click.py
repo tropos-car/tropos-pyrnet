@@ -4,7 +4,9 @@ import os.path
 import click
 import numpy as np
 import pandas as pd
+import xarray as xr
 import logging
+from toolz import merge_with
 
 from . import pyrnet
 from . import data as pyrdata
@@ -151,6 +153,92 @@ def process_l1b(input_files: list[str],
 cli.add_command(process)
 process.add_command(process_l1a)
 process.add_command(process_l1b)
+
+@click.command("merge")
+@click.argument("input_files", nargs=-1)
+@click.argument("output_file", nargs=1)
+def merge(input_files, output_file):
+    def _read_radflux_attrs(ds):
+        vattrs = {}
+        for var in ['ghi','gti']:
+            if var not in ds:
+                vattrs.update({
+                    var: {
+                        "serial": [""],
+                        "calibration_factor": [np.nan]
+                    }
+                })
+                continue
+            vattrs.update({
+                var: {
+                    "serial": [ds[var].serial],
+                    "calibration_factor": [ds[var].calibration_factor]
+                }
+            })
+        if "gti" in ds:
+            vattrs.update({
+                var: {
+                    "hangle": [ds[var].hangle],
+                    "vangle": [ds[var].vangle]
+                }
+            })
+        return vattrs
+
+    with click.progressbar(input_files, label='Merging') as files:
+
+        for i, fn in enumerate(files):
+            if i==0:
+                ds = xr.open_dataset(files[0])
+                vattrs = _read_radflux_attrs(ds)
+                continue
+
+            dst = xr.open_dataset(fn)
+            st = dst.station.values[0]
+            if st not in ds.station.values:
+                vattrs_temp = _read_radflux_attrs(dst)
+                vattrs.update({
+                    "ghi": merge_with(lambda x: [*x[0],*x[1]],(vattrs['ghi'],vattrs_temp['ghi'])),
+                    "gti": merge_with(lambda x: [*x[0], *x[1]], (vattrs['gti'], vattrs_temp['gti']))
+                })
+            ds = xr.merge((ds, dst))
+
+    # prepare netcdf encoding
+    gattrs, vattrs, vencode = pyrdata.get_cfmeta()
+
+    # add encoding to Dataset
+    for k, v in vencode.items():
+        if k not in ds.keys():
+            continue
+        ds[k].encoding = v
+
+    # special treatment for flux variables
+    for k in ['ghi', 'gti']:
+        if k not in ds:
+            continue
+        # add concatenated attrs
+        ds[k].attrs.update(vattrs[k])
+        # add encoding
+        dtype = ds[k].encoding['dtype']
+        int_limit = np.iinfo(dtype).max
+        valid_range = [0, int_limit - 1]
+        scale_factor = 1500. / float(int_limit - 1)
+        ds[k].encoding.update({
+            "scale_factor": scale_factor,
+            "_FillValue": int_limit,
+        })
+        ds[k].attrs.update({
+            "valid_range": valid_range
+        })
+
+    ds = pyrdata.stretch_resolution(ds)
+
+    ds["time"].encoding.update({
+        "dtype": 'f8',
+        "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
+    })
+    ds.to_netcdf(output_file)
+
+
 
 
 @click.group("convert")
