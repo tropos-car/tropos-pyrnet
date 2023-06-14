@@ -188,7 +188,7 @@ def merge(input_files, output_file):
 
         for i, fn in enumerate(files):
             if i==0:
-                ds = xr.open_dataset(files[0])
+                ds = xr.open_dataset(fn)
                 vattrs = _read_radflux_attrs(ds)
                 continue
 
