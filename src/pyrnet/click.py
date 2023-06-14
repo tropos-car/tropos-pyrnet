@@ -189,16 +189,16 @@ def merge(input_files, output_file):
         for i, fn in enumerate(files):
             if i==0:
                 ds = xr.open_dataset(fn)
-                vattrs = _read_radflux_attrs(ds)
+                vattrs_radflx = _read_radflux_attrs(ds)
                 continue
 
             dst = xr.open_dataset(fn)
             st = dst.station.values[0]
             if st not in ds.station.values:
                 vattrs_temp = _read_radflux_attrs(dst)
-                vattrs.update({
-                    "ghi": merge_with(lambda x: [*x[0],*x[1]],(vattrs['ghi'],vattrs_temp['ghi'])),
-                    "gti": merge_with(lambda x: [*x[0], *x[1]], (vattrs['gti'], vattrs_temp['gti']))
+                vattrs_radflx.update({
+                    "ghi": merge_with(lambda x: [*x[0],*x[1]],(vattrs_radflx['ghi'],vattrs_temp['ghi'])),
+                    "gti": merge_with(lambda x: [*x[0], *x[1]], (vattrs_radflx['gti'], vattrs_temp['gti']))
                 })
             ds = xr.merge((ds, dst))
 
@@ -211,12 +211,13 @@ def merge(input_files, output_file):
             continue
         ds[k].encoding = v
 
+    ds = pyrdata.stretch_resolution(ds)
     # special treatment for flux variables
     for k in ['ghi', 'gti']:
         if k not in ds:
             continue
         # add concatenated attrs
-        ds[k].attrs.update(vattrs[k])
+        ds[k].attrs.update(vattrs_radflx[k])
         # add encoding
         dtype = ds[k].encoding['dtype']
         int_limit = np.iinfo(dtype).max
@@ -227,10 +228,11 @@ def merge(input_files, output_file):
             "_FillValue": int_limit,
         })
         ds[k].attrs.update({
+            "units": "Wm-2",
             "valid_range": valid_range
         })
 
-    ds = pyrdata.stretch_resolution(ds)
+
 
     ds["time"].encoding.update({
         "dtype": 'f8',
