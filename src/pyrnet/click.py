@@ -238,6 +238,7 @@ def merge(input_files, output_file):
     })
     ds.to_netcdf(output_file)
 
+cli.add_command("merge")
 
 
 
