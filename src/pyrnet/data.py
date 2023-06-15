@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['pyrnet_version', 'logger', 'update_coverage_meta', 'stretch_resolution', 'merge_ds', 'to_netcdf', 'get_config',
-           'get_cfmeta', 'to_l1a', 'to_l1b']
+           'get_cfmeta', 'add_encoding', 'to_l1a', 'to_l1b']
 
 # %% ../../nbs/pyrnet/data.ipynb 2
 import os
@@ -157,12 +157,106 @@ def get_cfmeta(config: dict|None = None) -> dict:
     return gattrs ,vattrs, vencode
 
 
+# %% ../../nbs/pyrnet/data.ipynb 15
+def add_encoding(ds, vencode=None):
+    """
+    Set valid_range attribute and encoding to every variable of the dataset.
+
+    Parameters
+    ----------
+    ds: xr.Dataset
+        Dataset of any processing level. The processing level will be
+        determined by the global attribute 'processing_level'.
+    vencode: dict or None
+        Dictionary of encoding attributes by variable name, will be merged with pyrnet default cfmeta. The default is None.
+
+    Returns
+    -------
+    xr.Dataset
+        The input dataset but with encoding and valid_range attribute.
+    """
+    # prepare netcdf encoding
+    _, vattrs_default, vencode_default = get_cfmeta()
+
+    # Add valid range temporary to encoding dict.
+    # As valid_range is not implemented in xarray encoding,
+    #  it has to be stored as a variable attribute later.
+    for k in vencode_default:
+        if "valid_range" not in vencode_default[k]:
+            continue
+        vencode_default = assoc_in(vencode_default,
+                                   [k,'valid_range'],
+                                   vattrs_default['valid_range'])
+
+    # merge input and default with preference on input
+    if vencode is None:
+        vencode = vencode_default
+    else:
+        a = vencode_default.copy()
+        b = vencode.copy()
+        vencode = {}
+        for k in set(a)-set(b):
+            vencode.update({k:a[k]})
+        for k in set(a)&set(b):
+            vencode.update({k: {**a[k],**b[k]}})
+        for k in set(b)-set(a):
+            vencode.update({k:b[k]})
+
+    # add encoding to Dataset
+    for k, v in vencode.items():
+        if k not in ds.keys():
+            continue
+        ds[k].encoding = v
+        if "valid_range" not in vencode[k]:
+            continue
+        # add valid_range to variable attributes
+        ds[k].attrs.update({
+            'valid_range': vencode[k]['valid_range']
+        })
+
+    # special treatment of time and flux variables
+    if ds.processing_level=='l1a':
+        ds["gpstime"].encoding.update({
+            "dtype": 'f8',
+            "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
+        })
+        ds["adctime"].encoding.update({
+            "units": f"milliseconds",
+        })
+    elif ds.processing_level == 'l1b':
+        ds = stretch_resolution(ds)
+        # special treatment for flux variables
+        for k in ['ghi', 'gti']:
+            if k not in ds:
+                continue
+            # add encoding
+            dtype = ds[k].encoding['dtype']
+            int_limit = np.iinfo(dtype).max
+            valid_range = [0, int_limit - 1]
+            scale_factor = 1500. / float(int_limit - 1)
+            ds[k].encoding.update({
+                "scale_factor": scale_factor,
+                "_FillValue": int_limit,
+            })
+            ds[k].attrs.update({
+                "units": "W m-2",
+                "valid_range": valid_range
+            })
+
+        ds["time"].encoding.update({
+            "dtype": 'f8',
+            "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
+        })
+    else:
+        raise ValueError("Dataset has no 'processing_level' attribute.")
+    return ds
+
 # %% ../../nbs/pyrnet/data.ipynb 17
 def to_l1a(
         fname : str,
         *,
         station: int,
-        report: dict,
+        report: dict|pd.DataFrame|None,
         date_of_measure : np.datetime64 = np.datetime64("now"),
         config: dict|None = None,
         global_attrs: dict|None = None
@@ -219,6 +313,9 @@ def to_l1a(
 
     # 2. Get Logbook maintenance quality flags
     key = f"{station:03d}"
+    if report is None:
+        logger.warning("No report available!")
+        report = {}
     if isinstance(report, pd.DataFrame):
         logger.info(f"Parsing report at date {rec_gprmc.time[-1]}")
         report = pyrreports.parse_report(report,

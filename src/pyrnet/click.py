@@ -38,7 +38,6 @@ def process():
               nargs=1,
               help="Specify config files with override the default config.")
 @click.option("--report","-r",
-              default="",
               help="Specify the maintenance report file. If empty or 'online' it attempts to request it online.")
 @click.option("--date_of_maintenance",
               help="Specify date of maintenance as datetime64 string ('YYYY-MM-DD'). If not specified, try to retrieve from data.")
@@ -55,7 +54,9 @@ def process_l1a(input_files,
     parse = re.compile(cfg['filename_parser'])
 
     # parse maintenance reports
-    if report=="" or report=="online":
+    if report is None:
+        df_report = None
+    elif report=="online":
         df_report = pyrreports.get_responses(fn=None, online=cfg["online"])
     else:
         df_report = pyrreports.get_responses(fn=report)
