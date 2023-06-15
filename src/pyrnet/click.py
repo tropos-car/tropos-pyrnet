@@ -132,7 +132,7 @@ def process_l1b(input_files: list[str],
                 config=config,
                 global_attrs=cfg['global_attrs']
             )
-            box = ds.station.values[0]
+            box = int(ds.station.values[0])
             udays = np.unique(ds.time.values.astype("datetime64[D]"))
             for day in udays:
                 day = pd.to_datetime(day)
@@ -144,7 +144,7 @@ def process_l1b(input_files: list[str],
                         dt=day,
                         campaign=cfg['campaign'],
                         station=box,
-                        collection=cfg['collection'],
+                        collection=int(cfg['collection']),
                         sfx="nc"
                     )
                 )
