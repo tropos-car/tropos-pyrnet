@@ -203,7 +203,6 @@ def merge(input_files, output_file,freq=None):
                 vattrs_radflx = _read_radflux_attrs(ds)
                 continue
 
-            dst = xr.open_dataset(fn)
             st = dst.station.values[0]
             if st not in ds.station.values:
                 vattrs_temp = _read_radflux_attrs(dst)
