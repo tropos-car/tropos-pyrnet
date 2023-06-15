@@ -63,6 +63,8 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     for var in ds:
         if "scale_factor" not in ds[var].encoding:
             continue
+        if "valid_range" not in ds[var].attrs:
+            continue
         dtype = ds[var].encoding['dtype']
         valid_range = ds[var].valid_range
         int_limit = np.iinfo(dtype).max
@@ -77,7 +79,7 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
         })
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 8
+# %% ../../nbs/pyrnet/data.ipynb 7
 def merge_ds(ds1,ds2):
     """Merge two datasets along the time dimension.
     """
@@ -94,9 +96,12 @@ def merge_ds(ds1,ds2):
 
     # add global coverage attributes
     ds_new.attrs.update({'merged':1})
+
+    # add encoding again
+    ds_new = add_encoding(ds_new)
     return ds_new
 
-# %% ../../nbs/pyrnet/data.ipynb 9
+# %% ../../nbs/pyrnet/data.ipynb 8
 def to_netcdf(ds,fname):
     """xarray to netcdf, but merge if exist
     """
@@ -111,7 +116,7 @@ def to_netcdf(ds,fname):
     ds.to_netcdf(fname,
                  encoding={'time':{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
-# %% ../../nbs/pyrnet/data.ipynb 11
+# %% ../../nbs/pyrnet/data.ipynb 10
 def get_config(config: dict|None = None) -> dict:
     """Read default config and merge with input config
     """
@@ -256,8 +261,6 @@ def to_l1a(
         if key in sites:
             gattrs.update({ "site" : sites[key]})
 
-
-
     # add gti angles
     # default horizontal
     vattrs = assoc_in(vattrs, ["gti","hangle"], 0)
@@ -307,18 +310,7 @@ def to_l1a(
         ds[k].attrs = v
 
     # add encoding to Dataset
-    for k,v in vencode.items():
-        if k not in ds.keys():
-            continue
-        ds[k].encoding = v
-
-    ds["gpstime"].encoding.update({
-        "dtype": 'f8',
-        "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
-    })
-    ds["adctime"].encoding.update({
-        "units": f"milliseconds",
-    })
+    ds = add_encoding(ds, vencode)
 
     return ds
 
@@ -408,7 +400,7 @@ def to_l1b(
     # update attributes and encoding
     for key in ['szen', 'sazi','esd']:
         ds_l1b[key].attrs.update(vattrs[key])
-        ds_l1b[key].encoding.update(vencode[key])
+        # ds_l1b[key].encoding.update(vencode[key])
 
 
     # 8. rad flux calibration
@@ -438,16 +430,18 @@ def to_l1b(
             "serial": serial[i],
             "calibration_factor": cfac[i]
         })
-        ds_l1b[radflx].encoding.update({
-            'scale_factor': ds_l1b[radflx].encoding['scale_factor']*1e6/(cfac[i])
-        })
+        # ds_l1b[radflx].encoding.update({
+        #     'scale_factor': ds_l1b[radflx].encoding['scale_factor']*1e6/(cfac[i])
+        # })
 
 
     # add global coverage attributes
     ds_l1b = update_coverage_meta(ds_l1b, timevar="time")
-
     ds_l1b.attrs["processing_level"] = 'l1b'
     now = pd.to_datetime(np.datetime64("now"))
     ds_l1b.attrs["history"] = ds_l1b.history + f"{now.isoformat()}: Generated level l1b  by pyrnet version {pyrnet_version}; "
+
+    # update encoding
+    ds_l1b = add_encoding(ds_l1b, vencode=vencode)
 
     return ds_l1b

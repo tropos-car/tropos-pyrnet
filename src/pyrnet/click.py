@@ -214,40 +214,15 @@ def merge(input_files, output_file,freq=None):
             else:
                 ds = xr.merge((ds,dst))
 
-    # prepare netcdf encoding
-    gattrs, vattrs, vencode = pyrdata.get_cfmeta()
-
-    # add encoding to Dataset
-    for k, v in vencode.items():
-        if k not in ds.keys():
-            continue
-        ds[k].encoding = v
-
-    ds = pyrdata.stretch_resolution(ds)
     # special treatment for flux variables
     for k in ['ghi', 'gti']:
         if k not in ds:
             continue
         # add concatenated attrs
         ds[k].attrs.update(vattrs_radflx[k])
-        # add encoding
-        dtype = ds[k].encoding['dtype']
-        int_limit = np.iinfo(dtype).max
-        valid_range = [0, int_limit - 1]
-        scale_factor = 1500. / float(int_limit - 1)
-        ds[k].encoding.update({
-            "scale_factor": scale_factor,
-            "_FillValue": int_limit,
-        })
-        ds[k].attrs.update({
-            "units": "Wm-2",
-            "valid_range": valid_range
-        })
 
-    ds["time"].encoding.update({
-        "dtype": 'f8',
-        "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
-    })
+    ds = pyrdata.add_encoding(ds)
+
     ds.to_netcdf(output_file)
 
 cli.add_command(merge)
