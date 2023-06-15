@@ -157,7 +157,8 @@ process.add_command(process_l1b)
 @click.command("merge")
 @click.argument("input_files", nargs=-1)
 @click.argument("output_file", nargs=1)
-def merge(input_files, output_file):
+@click.option("-f","--freq",nargs=1,help="Sampling frequency for regular time grid. The default is 1s.")
+def merge(input_files, output_file,freq=None):
     def _read_radflux_attrs(ds):
         vattrs = {}
         for var in ['ghi','gti']:
@@ -184,11 +185,21 @@ def merge(input_files, output_file):
             })
         return vattrs
 
+
+    if freq is None:
+        freq = '1s'
+
     with click.progressbar(input_files, label='Merging') as files:
 
         for i, fn in enumerate(files):
+            dst = xr.open_dataset(fn)
+            # unify time dimension to speed up merging
+            date = dst.time.values[0].astype("datetime64[D]")
+            timeidx = pd.date_range(date, date + np.timedelta64(1, 'D'), freq=freq, inclusive='left')
+            dst = dst.interp(time=timeidx)
+
             if i==0:
-                ds = xr.open_dataset(fn)
+                ds = dst.copy()
                 vattrs_radflx = _read_radflux_attrs(ds)
                 continue
 
@@ -197,10 +208,12 @@ def merge(input_files, output_file):
             if st not in ds.station.values:
                 vattrs_temp = _read_radflux_attrs(dst)
                 vattrs_radflx.update({
-                    "ghi": merge_with(lambda x: [*x[0],*x[1]],(vattrs_radflx['ghi'],vattrs_temp['ghi'])),
-                    "gti": merge_with(lambda x: [*x[0], *x[1]], (vattrs_radflx['gti'], vattrs_temp['gti']))
+                    "ghi": merge_with(lambda x: [*x[0],*x[1]], (vattrs_radflx['ghi'], vattrs_temp['ghi'])),
+                    "gti": merge_with(lambda x: [*x[0],*x[1]], (vattrs_radflx['gti'], vattrs_temp['gti']))
                 })
-            ds = xr.merge((ds, dst))
+                ds = xr.concat((ds, dst), dim='station')
+            else:
+                ds = xr.merge((ds,dst))
 
     # prepare netcdf encoding
     gattrs, vattrs, vencode = pyrdata.get_cfmeta()
@@ -231,8 +244,6 @@ def merge(input_files, output_file):
             "units": "Wm-2",
             "valid_range": valid_range
         })
-
-
 
     ds["time"].encoding.update({
         "dtype": 'f8',
