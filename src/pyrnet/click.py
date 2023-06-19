@@ -204,6 +204,12 @@ def merge(input_files, output_file,freq=None):
                 dst = dst.assign({
                     "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan))
                 })
+                dst.gti.attrs.update({
+                    "serial":"",
+                    "calibration_factor": None,
+                    "vangle": None,
+                    "hangle": None
+                })
 
             if i==0:
                 ds = dst.copy()
