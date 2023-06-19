@@ -199,6 +199,12 @@ def merge(input_files, output_file,freq=None):
             timeidx = pd.date_range(date, date + np.timedelta64(1, 'D'), freq=freq, inclusive='left')
             dst = dst.interp(time=timeidx)
 
+            # add gti for single stations
+            if "gti" not in dst:
+                dst = dst.assign({
+                    "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan))
+                })
+
             if i==0:
                 ds = dst.copy()
                 vattrs_radflx = _read_radflux_attrs(ds)
