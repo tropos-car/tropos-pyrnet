@@ -15,7 +15,7 @@ from toolz import assoc_in
 
 from . import utils
 
-# %% ../../nbs/pyrnet/reports.ipynb 7
+# %% ../../nbs/pyrnet/reports.ipynb 8
 def get_responses(
         *,
         fn: FilePath | ReadCsvBuffer[bytes] | ReadCsvBuffer[str]|None = None,
@@ -69,10 +69,11 @@ def get_responses(
     else:
         raise ValueError
     df = pd.read_csv(filepath_or_buffer, sep=';')
+    df = df[~df.submitdate.isnull()].reset_index(drop=True)
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 10
+# %% ../../nbs/pyrnet/reports.ipynb 11
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -162,7 +163,7 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 11
+# %% ../../nbs/pyrnet/reports.ipynb 12
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
@@ -191,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 15
+# %% ../../nbs/pyrnet/reports.ipynb 16
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -287,7 +288,7 @@ def parse_report(
     return results
 
 
-# %% ../../nbs/pyrnet/reports.ipynb 19
+# %% ../../nbs/pyrnet/reports.ipynb 20
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
