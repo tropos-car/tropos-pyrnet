@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['campaign_pfx', 'DATA_URL', 'FNAME_FMT_HDCP2', 'SOLCONST', 'MAX_MISSING', 'MIN_GOOD', 'get_elements',
-           'parse_thredds_catalog', 'lookup_fnames', 'read_hdcp2', 'read_thredds', 'read_pyrnet', 'read_calibration',
+           'parse_thredds_catalog', 'lookup_fnames', 'read_thredds', 'read_hdcp2', 'read_pyrnet', 'read_calibration',
            'get_pyrnet_mapping', 'meta_lookup']
 
 # %% ../../nbs/pyrnet/pyrnet.ipynb 2
@@ -17,6 +17,7 @@ import xarray as xr
 from scipy.interpolate import interp1d
 from toolz import valfilter, cons, merge, merge_with
 import pkg_resources as pkg_res
+import warnings
 
 # python -m pip install git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base
 from trosat import sunpos as sp
@@ -77,9 +78,6 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
     """Parse Thredds server files and return list of filenames matching the date, station, campaign and collection configuration."""
     date = pyrutils.to_datetime64(date)
 
-    if not isinstance(station, Iterable):
-        station=[station]
-
     fn = pkg_res.resource_filename("pyrnet", "share/pyrnet_config.json")
     pyrcfg = pyrutils.read_json(fn)
 
@@ -89,16 +87,53 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
     catalog_url += f"{lvl}/catalog.xml"
     catalog = parse_thredds_catalog(catalog_url, pyrcfg[f"output_{lvl}"])
 
+    if station is None:
+        try:
+            nlvl = f"{lvl}_network"
+            c = parse_thredds_catalog(catalog_url.replace(f"/{lvl}/",f"/{nlvl}/"),
+                                      pyrcfg[f"output_{nlvl}"])
+            c = c.query(f"dt=='{pd.to_datetime(date):%Y-%m-%d}'")
+            if c.size==0:
+                raise ValueError
+            if collection is None:
+                col = np.nanmax(c['collection'])
+            else:
+                col = collection
+            fnames = [
+                pyrcfg[f"output_{nlvl}"].format(
+                    dt=pd.to_datetime(date),
+                    campaign=campaign,
+                    collection=col,
+                    sfx="nc"
+                )
+            ]
+            url = DATA_URL.format(dt=pd.to_datetime(date),campaign=campaign)
+            fnames = [url + f"{nlvl}/"+ fn for fn in fnames]
+            return fnames
+        except:
+            station = np.unique(catalog["station"].values)
+
+    if not isinstance(station, Iterable):
+        station=[station]
+
     # file name blueprint
-    fname = DATA_URL + f"{lvl}/"+ pyrcfg[f"output_{lvl}"]
 
     fnames = []
     for st in station:
+        c = catalog.query(f'station=={st}').reset_index()
+        if c.size==0:
+            warnings.warn(f"File of station {st} does not exist.")
+            continue
+
         if collection is None:
-            c = catalog.query(f'station=={st}')
             col = np.nanmax(c['collection'])
         else:
             col = collection
+
+        c = c.query(f"collection=={col}").reset_index()
+        if c.size==0:
+            warnings.warn(f"File of station {st}, collection {col} does not exist.")
+            continue
 
         if lvl=='l1a':
             c = catalog.query(f'station=={st} & collection=={col}').reset_index()
@@ -108,7 +143,8 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
             idate_start = np.sum(date>=startdts)-1
             idate_end = np.sum(date>enddts)
             if (idate_start==-1) or (idate_end==enddts.size):
-                raise ValueError(f"File of level {lvl} at date {date} does not exist.")
+                warnings.warn(f"File of station {st}, level {lvl} at date {date} does not exist.")
+                continue
 
             fnames.append(
                 pyrcfg[f"output_{lvl}"].format(
@@ -133,6 +169,10 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
                 )
 
         else:
+            c = c.query(f"dt=='{pd.to_datetime(date):%Y-%m-%d}'")
+            if c.size==0:
+                warnings.warn(f"File of station {st}, collection {col} at date {date} does not exist.")
+                continue
             fnames.append(
                 pyrcfg[f"output_{lvl}"].format(
                     dt=pd.to_datetime(date),
@@ -142,9 +182,86 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
                     sfx="nc"
                 )
             )
+    url = DATA_URL.format(dt=pd.to_datetime(date),campaign=campaign)
+    fnames = [url + f"{lvl}/"+ fn for fn in fnames]
     return fnames
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 12
+# %% ../../nbs/pyrnet/pyrnet.ipynb 17
+def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, freq="1s", drop_vars=None):
+    """
+    Read PyrNet data (processed with pyrnet package) from the TROPOS thredds server. Returns one xarray Dataset merged to match the dates and stations input.
+    Parameters
+    ----------
+    dates: list, ndarray, or scalar of type float, datetime or datetime64
+        A representation of time. If float, interpreted as Julian date.
+    campaign: str
+        Campaign identifier.
+    stations: list, ndarray, or scalar of type int or None
+        PyrNet station numbers. If None, read all stations available.
+    lvl: str
+        Data processing level -> 'l1a', 'l1b'. The default is 'l1b'.
+    collection: int or None
+        Collection number. If None, the latest available collection is looked up. The default is None.
+    freq: str
+        Pandas date frequencey description string. The default is '1s'.
+    drop_vars: list of string or None
+        List of variables to drop from datasets to speed up merging process.
+
+    Returns
+    -------
+    xarray.Dataset
+        Merged Dataset including all dates and stations specified by the input.
+    """
+
+    if not isinstance(dates,Iterable):
+        dates = [dates]
+
+    fnames = []
+    for date in dates:
+        fnames.extend(
+            lookup_fnames(
+                date=date,
+                station=stations,
+                lvl=lvl,
+                campaign=campaign,
+                collection=collection
+            )
+        )
+    urls = np.unique(fnames)
+
+    if len(urls)==0:
+        return None
+
+    stations = np.arange(1,101)
+    for i,url in enumerate(urls):
+        # read from thredds server
+        dst = xr.open_dataset(url)
+
+        # drop not needed variables
+        if drop_vars is not None:
+            dst = dst.drop_vars(drop_vars)
+
+        # unify time and station dimension to speed up merging
+        date = dst.time.values[0].astype("datetime64[D]")
+        timeidx = pd.date_range(date, date + np.timedelta64(1, 'D'), freq=freq, inclusive='left')
+        dst = dst.interp(time=timeidx)
+        dst = dst.reindex({"station": stations})
+
+        # add gti for single stations
+        if "gti" not in dst:
+            dst = dst.assign({
+                "gti": (("time","station"), np.full(dst.ghi.values.shape,np.nan))
+            })
+
+        # merge
+        if i == 0:
+            ds = dst.copy()
+        else:
+            ds = xr.concat((ds,dst),dim='time', data_vars='minimal', coords='minimal', compat='override')
+    ds = ds.dropna(dim="station",how='all')
+    return ds
+
+# %% ../../nbs/pyrnet/pyrnet.ipynb 20
 def read_hdcp2( dt, fill_gaps=True, campaign='hope_juelich'):
     """
     Read HDCP2-formatted datafiles from the pyranometer network
@@ -192,55 +309,7 @@ def read_hdcp2( dt, fill_gaps=True, campaign='hope_juelich'):
     ds['gtrans']  = ds.rsds/ds.esd**2/SOLCONST/ds['mu0']
     return ds.rename({'rsds_flag':'qaflag','rsds':'ghi'})
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 14
-def read_thredds(dates, *, stations, campaign, lvl='l1b', collection=None):
-    """
-    Read PyrNet data (processed with pyrnet package) from the TROPOS thredds server. Returns one xarray Dataset merged to match the dates and stations input.
-    Parameters
-    ----------
-    dates: list, ndarray, or scalar of type float, datetime or datetime64
-        A representation of time. If float, interpreted as Julian date.
-    stations: list, ndarray, or scalar of type int
-        PyrNet station numbers.
-    campaign: str
-        Campaign identifier.
-    lvl: str
-        Data processing level -> 'l1a', 'l1b'. The default is 'l1b'.
-    collection: int or None
-        Collection number. If None, the latest available collection is looked up. The default is None.
-
-    Returns
-    -------
-    xarray.Dataset
-        Merged Dataset including all dates and stations specified by the input.
-    """
-
-    if not isinstance(dates,Iterable):
-        dates = [dates]
-
-    fnames = []
-    for date in dates:
-        fnames.extend(
-            lookup_fnames(
-                date=date,
-                station=stations,
-                lvl=lvl,
-                campaign=campaign,
-                collection=collection
-            )
-        )
-    fnames = np.unique(fnames)
-
-    url = DATA_URL.format(dt=pd.to_datetime(dates[0]), campaign=campaign)
-    url += f"{lvl}/"
-    urls = [url+fn for fn in fnames]
-
-    ds = xr.open_dataset(urls[0])
-    for url in urls[1:]:
-        ds = xr.merge((ds,xr.open_dataset(url)))
-    return ds
-
-# %% ../../nbs/pyrnet/pyrnet.ipynb 17
+# %% ../../nbs/pyrnet/pyrnet.ipynb 21
 # read pyrnet data and add coordinates
 def read_pyrnet(date, campaign):
     """ Read pyrnet data and add coordinates
@@ -251,7 +320,7 @@ def read_pyrnet(date, campaign):
     pyr['y'] = xr.DataArray(y,dims=('nstations'))
     return pyr
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 27
+# %% ../../nbs/pyrnet/pyrnet.ipynb 31
 def read_calibration(cfile:str, cdate):
     """
     Parse calibration json file
@@ -292,7 +361,7 @@ def read_calibration(cfile:str, cdate):
             c.update({k:newv})
     return c
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 33
+# %% ../../nbs/pyrnet/pyrnet.ipynb 37
 def get_pyrnet_mapping(fn:str, date):
     """
     Parse box - serial number mapping  json file
@@ -321,7 +390,7 @@ def get_pyrnet_mapping(fn:str, date):
     # merge and update with the most recent map
     return  merge([pyrnetmap[key] for key in skeys])
 
-# %% ../../nbs/pyrnet/pyrnet.ipynb 35
+# %% ../../nbs/pyrnet/pyrnet.ipynb 39
 def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
     if cfile is None:
         cfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_calibration.json")

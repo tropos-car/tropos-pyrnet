@@ -6,6 +6,7 @@
 {
   "output_l1a" : "pyrnet_{startdt:%Y-%m-%d}_{enddt:%Y-%m-%d}_{campaign}_st{station:03d}_l1a.c{collection:02d}.{sfx}",
   "output_l1b" : "pyrnet_{dt:%Y-%m-%d}_{campaign}_st{station:03d}_l1b.c{collection:02d}.{sfx}",
+  "output_l1b_network" : "pyrnet_{dt:%Y-%m-%d}_{campaign}_network_l1b.c{collection:02d}.{sfx}",
   "file_cfmeta" : null, // json config file of netCDF attributes and encoding
   "file_calibration" : null, // json calibration file
   "file_mapping": null, // box to pyranometer serial number mapping
