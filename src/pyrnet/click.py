@@ -206,9 +206,9 @@ def merge(input_files, output_file,freq=None):
                 })
                 dst.gti.attrs.update({
                     "serial":"",
-                    "calibration_factor": None,
-                    "vangle": None,
-                    "hangle": None
+                    "calibration_factor": 0,
+                    "vangle": 0,
+                    "hangle": 0
                 })
 
             if i==0:
