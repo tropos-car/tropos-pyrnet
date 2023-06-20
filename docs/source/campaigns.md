@@ -18,7 +18,7 @@ Pyranometers where placed in batches of 3 in 8 MyDiv Patches in the following co
 ![Numbered Mydiv patches](images/mydiv_patches.png)
 
 
-```{raw}
+```
 # MyDiv Patch:
 o = tree
 P = Pyranometer
