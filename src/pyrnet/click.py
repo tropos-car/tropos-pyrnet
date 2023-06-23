@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import logging
-from toolz import merge_with
+from collections.abc import Iterable
+from toolz import merge_with, assoc_in
 
 from . import pyrnet
 from . import data as pyrdata
@@ -161,29 +162,26 @@ process.add_command(process_l1b)
 @click.option("-f","--freq",nargs=1,help="Sampling frequency for regular time grid. The default is 1s.")
 def merge(input_files, output_file,freq=None):
     def _read_radflux_attrs(ds):
+        def _ensure_list(a):
+            if (not isinstance(a, Iterable)) or isinstance(a, str):
+                return [a]
+            else:
+                return list(a)
+
         vattrs = {}
-        for var in ['ghi','gti']:
-            if var not in ds:
-                vattrs.update({
-                    var: {
-                        "serial": [""],
-                        "calibration_factor": [np.nan]
-                    }
-                })
-                continue
+        for var in ['ghi', 'gti']:
             vattrs.update({
                 var: {
-                    "serial": [ds[var].serial],
-                    "calibration_factor": [ds[var].calibration_factor]
+                    "serial": _ensure_list(ds[var].serial),
+                    "calibration_factor": _ensure_list(ds[var].calibration_factor)
                 }
             })
-        if "gti" in ds:
-            vattrs.update({
-                var: {
-                    "hangle": [ds[var].hangle],
-                    "vangle": [ds[var].vangle]
-                }
-            })
+            if var == "gti":
+                vattrs = assoc_in(vattrs, ["gti", "hangle"],
+                                  _ensure_list(ds[var].hangle))
+                vattrs = assoc_in(vattrs, ["gti", "vangle"],
+                                  _ensure_list(ds[var].vangle))
+
         return vattrs
 
 
