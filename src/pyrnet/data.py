@@ -360,14 +360,16 @@ def to_l1a(
 
     # add gti angles
     # default horizontal
-    vattrs = assoc_in(vattrs, ["gti","hangle"], 0)
-    vattrs = assoc_in(vattrs, ["gti","vangle"], 0)
+    vattrs = assoc_in(vattrs, ["gti","hangle"], 0.)
+    vattrs = assoc_in(vattrs, ["gti","vangle"], 0.)
     # update with angles from mapping file
     if config['gti_angles'] is not None:
         gti_angles = pyrutils.read_json(config['file_gti_angles'])[config['gti_angles']]
         if key in gti_angles:
-            vattrs = assoc_in(vattrs, ["gti","hangle"], gti_angles[key][0])
-            vattrs = assoc_in(vattrs, ["gti","vangle"], gti_angles[key][1])
+            hangle = np.nan if gti_angles[key][0] is None else gti_angles[key][0]
+            vangle = np.nan if gti_angles[key][1] is None else gti_angles[key][1]
+            vattrs = assoc_in(vattrs, ["gti","hangle"], hangle)
+            vattrs = assoc_in(vattrs, ["gti","vangle"], vangle)
 
     if adc_volts.shape[1]<5: # gti data is not available
         adc_volts = np.concatenate((adc_volts,-1*np.ones(adc_volts.shape[0])[:,None]),axis=1)
