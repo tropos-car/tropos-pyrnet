@@ -225,7 +225,7 @@ def merge(input_files, output_file,freq=None):
                 })
                 ds = xr.concat((ds, dst), dim='station')
             else:
-                ds = xr.merge((ds,dst))
+                ds = xr.merge((ds,dst), compat="override")
 
     # special treatment for flux variables
     for k in ['ghi', 'gti']:
