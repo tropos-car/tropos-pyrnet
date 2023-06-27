@@ -104,7 +104,10 @@ def process_l1a(input_files,
                     sfx="nc"
                 )
             )
-            ds.to_netcdf(outfile, encoding={'gpstime':{'dtype':'float64'}})
+            # if os.path.exists(outfile):
+                # logger.info(f"{outfile} already exists, write to ")
+            pyrdata.to_netcdf(ds, outfile, timevar="gpstime")
+            # ds.to_netcdf(outfile, encoding={'gpstime':{'dtype':'float64'}})
             logging.info(f"l1a saved to {outfile}")
 
 
