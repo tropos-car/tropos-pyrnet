@@ -80,19 +80,21 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 # %% ../../nbs/pyrnet/data.ipynb 7
-def merge_ds(ds1,ds2):
+def merge_ds(ds1,ds2,timevar="time"):
     """Merge two datasets along the time dimension.
     """
-    if ds1.time.equals(ds2.time):
+    if ds1[timevar].equals(ds2[timevar]):
         logging.info("Overwrite existing file.")
         return ds2
     logging.info("Merge with existing file.")
 
     ## overwrite non time dependent variables
-    overwrite_vars = [ v for v in ds1 if "time" not in ds1[v].dims]
+    overwrite_vars = [ v for v in ds1 if timevar not in ds1[v].dims ]
 
     ## merge both datasets
-    ds_new=ds1.merge(ds2,compat='no_conflicts',overwrite_vars=overwrite_vars)
+    ds_new=ds1.merge(ds2,
+                     compat='no_conflicts',
+                     overwrite_vars=overwrite_vars)
 
     # add global coverage attributes
     ds_new.attrs.update({'merged':1})
@@ -102,19 +104,19 @@ def merge_ds(ds1,ds2):
     return ds_new
 
 # %% ../../nbs/pyrnet/data.ipynb 8
-def to_netcdf(ds,fname):
+def to_netcdf(ds,fname, timevar="time"):
     """xarray to netcdf, but merge if exist
     """
     # merge if necessary
     if os.path.exists(fname):
         ds1 = xr.open_dataset(fname)
-        ds = merge_ds(ds1,ds)
+        ds = merge_ds(ds1,ds, timevar=timevar)
         os.remove(fname)
 
     # save to netCDF4
-    ds = update_coverage_meta(ds, timevar="time")
+    ds = update_coverage_meta(ds, timevar=timevar)
     ds.to_netcdf(fname,
-                 encoding={'time':{'dtype':'float64'}}) # for OpenDAP 2 compatibility
+                 encoding={timevar:{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
 # %% ../../nbs/pyrnet/data.ipynb 10
 def get_config(config: dict|None = None) -> dict:
@@ -459,7 +461,7 @@ def to_l1b(
     if (ds_l1b.time.values[0] + 3*stripminutes) > ds_l1b.time.values[-1]:
         logger.warning(f"{fname} has not enough data. Skip.")
         return None
-    
+
     ds_l1b = ds_l1b.isel(time=ds_l1b.time>ds_l1b.time.values[0] + stripminutes)
     ds_l1b = ds_l1b.isel(time=ds_l1b.time<ds_l1b.time.values[-1] - stripminutes)
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
