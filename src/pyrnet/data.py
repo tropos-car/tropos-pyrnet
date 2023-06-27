@@ -111,6 +111,7 @@ def to_netcdf(ds,fname, timevar="time"):
     if os.path.exists(fname):
         ds1 = xr.open_dataset(fname)
         ds = merge_ds(ds1,ds, timevar=timevar)
+        ds1.close()
         os.remove(fname)
 
     # save to netCDF4
@@ -467,7 +468,7 @@ def to_l1b(
     if ds_l1b.time.size < 10:
         logger.warning(f"{fname} has not enough data, after strip. Skip.")
         return None
-    
+
 
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
