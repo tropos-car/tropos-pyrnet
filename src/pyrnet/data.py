@@ -464,6 +464,11 @@ def to_l1b(
 
     ds_l1b = ds_l1b.isel(time=ds_l1b.time>ds_l1b.time.values[0] + stripminutes)
     ds_l1b = ds_l1b.isel(time=ds_l1b.time<ds_l1b.time.values[-1] - stripminutes)
+    if ds_l1b.time.size < 10:
+        logger.warning(f"{fname} has not enough data, after strip. Skip.")
+        return None
+    
+
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
 
