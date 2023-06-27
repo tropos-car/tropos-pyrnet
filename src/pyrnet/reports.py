@@ -15,7 +15,7 @@ from toolz import assoc_in
 
 from . import utils
 
-# %% ../../nbs/pyrnet/reports.ipynb 8
+# %% ../../nbs/pyrnet/reports.ipynb 9
 def get_responses(
         *,
         fn: FilePath | ReadCsvBuffer[bytes] | ReadCsvBuffer[str]|None = None,
@@ -73,7 +73,7 @@ def get_responses(
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 11
+# %% ../../nbs/pyrnet/reports.ipynb 12
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -163,7 +163,7 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 12
+# %% ../../nbs/pyrnet/reports.ipynb 13
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
@@ -192,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 16
+# %% ../../nbs/pyrnet/reports.ipynb 17
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -249,18 +249,17 @@ def parse_report(
         box = int(df["Q00"].values[i])
         key = f"{box:03d}"
 
-        # consider only reports +-2 days around date of maintenance
+        # consider only reports -1 to +7 days around date of maintenance
         mdate = pd.to_datetime(df['datestamp'][i])
         if date_of_maintenance is None:
-            dtime = np.abs(mdate - np.max(df['datestamp']))
+            dtime = mdate - np.max(df['datestamp'])
         else:
-            dtime = np.abs(mdate - date_of_maintenance)
+            dtime = mdate - date_of_maintenance
 
-        if dtime > np.timedelta64(2,'D'):
+        if (dtime<np.timedelta64(-1,'D')) or (dtime>np.timedelta64(7,'D')):
             continue
 
         # store report in dictionary
-
         if key not in results:
             # initialize marks
             for mkey in _mark_keys:
@@ -288,7 +287,7 @@ def parse_report(
     return results
 
 
-# %% ../../nbs/pyrnet/reports.ipynb 20
+# %% ../../nbs/pyrnet/reports.ipynb 21
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
