@@ -419,7 +419,7 @@ def to_l1b(
         *,
         config: dict | None = None,
         global_attrs: dict | None = None
-) -> xr.Dataset:
+) -> xr.Dataset|None:
 
     config = get_config(config)
     gattrs, vattrs, vencode = get_cfmeta(config)
@@ -431,7 +431,8 @@ def to_l1b(
     ds_l1a = xr.open_dataset(fname)
     # check correct file
     if ds_l1a.processing_level != "l1a":
-        raise ValueError(f"{fname} is not a l1a file.")
+        logger.warning(f"{fname} is not a l1a file. Skip.")
+        return None
 
     # 2. Sync GPS to ADC time
     adctime = pyrlogger.sync_adc_time(
@@ -455,6 +456,10 @@ def to_l1b(
 
     # 4. Drop first and last <stripminutes> minutes of data to avoid bad data due to maintenance
     stripminutes = np.timedelta64(int(config['stripminutes']), 'm')
+    if (ds_l1b.time.values[0] + 3*stripminutes) > ds_l1b.time.values[-1]:
+        logger.warning(f"{fname} has not enough data. Skip.")
+        return None
+    
     ds_l1b = ds_l1b.isel(time=ds_l1b.time>ds_l1b.time.values[0] + stripminutes)
     ds_l1b = ds_l1b.isel(time=ds_l1b.time<ds_l1b.time.values[-1] - stripminutes)
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")

@@ -133,6 +133,10 @@ def process_l1b(input_files: list[str],
                 config=config,
                 global_attrs=cfg['global_attrs']
             )
+            if ds is None:
+                logger.debug(f"{filename} is skipped.")
+                continue
+
             box = int(ds.station.values[0])
             udays = np.unique(ds.time.values.astype("datetime64[D]"))
             for day in udays:
