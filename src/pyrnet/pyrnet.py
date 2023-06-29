@@ -250,14 +250,20 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
         # add gti for single stations
         if "gti" not in dst:
             dst = dst.assign({
-                "gti": (("time","station"), np.full(dst.ghi.values.shape,np.nan))
+                "gti": (("time","station"), np.full(dst.ghi.values.shape,np.nan)),
+                "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape,255))
             })
 
         # merge
         if i == 0:
             ds = dst.copy()
         else:
-            ds = xr.concat((ds,dst),dim='time', data_vars='minimal', coords='minimal', compat='override')
+            overwrite_vars = [v for v in dst if "time" not in dst[v].dims]
+            ds = ds.concat(dst,dim='time',
+                           data_vars='minimal',
+                           coords='minimal',
+                           overwrite_vars=overwrite_vars)
+            dst.close()
     ds = ds.dropna(dim="station",how='all')
     return ds
 
