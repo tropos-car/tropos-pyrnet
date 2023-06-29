@@ -259,10 +259,13 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
             ds = dst.copy()
         else:
             overwrite_vars = [v for v in dst if "time" not in dst[v].dims]
-            ds = ds.concat(dst,dim='time',
-                           data_vars='minimal',
-                           coords='minimal',
-                           overwrite_vars=overwrite_vars)
+            # ds = ds.concat(dst,dim='time',
+            #                data_vars='minimal',
+            #                coords='minimal',
+            #                overwrite_vars=overwrite_vars)
+            ds = ds.merge(dst,
+                          compat='no_conflicts',
+                          overwrite_vars=overwrite_vars)
             dst.close()
     ds = ds.dropna(dim="station",how='all')
     return ds
