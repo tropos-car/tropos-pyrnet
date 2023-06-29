@@ -167,7 +167,8 @@ process.add_command(process_l1b)
 @click.argument("input_files", nargs=-1)
 @click.argument("output_file", nargs=1)
 @click.option("-f","--freq",nargs=1,help="Sampling frequency for regular time grid. The default is 1s.")
-def merge(input_files, output_file,freq=None):
+@click.option("-t","--timevar", nargs=1, help="Name of the variable storing the time index. The default is 'time'.")
+def merge(input_files, output_file,freq=None,timevar=None):
     def _read_radflux_attrs(ds):
         def _ensure_list(a):
             if (not isinstance(a, Iterable)) or isinstance(a, str):
@@ -191,7 +192,8 @@ def merge(input_files, output_file,freq=None):
 
         return vattrs
 
-
+    if timevar is None:
+        timevar = "time"
     if freq is None:
         freq = '1s'
 
@@ -207,7 +209,8 @@ def merge(input_files, output_file,freq=None):
             # add gti for single stations
             if "gti" not in dst:
                 dst = dst.assign({
-                    "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan))
+                    "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan)),
+                    "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape, 255))
                 })
                 dst.gti.attrs.update({
                     "serial":"",
@@ -230,7 +233,10 @@ def merge(input_files, output_file,freq=None):
                 })
                 ds = xr.concat((ds, dst), dim='station')
             else:
-                ds = xr.merge((ds, dst), compat="override")
+                overwrite_vars = [v for v in ds if timevar not in ds[v].dims]
+                ds = ds.merge(dst,
+                              compat='no_conflicts',
+                              overwrite_vars=overwrite_vars)
             dst.close()
 
     # special treatment for flux variables
