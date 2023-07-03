@@ -204,13 +204,13 @@ def merge(input_files, output_file,freq=None,timevar=None):
             # unify time dimension to speed up merging
             date = dst.time.values[0].astype("datetime64[D]")
             timeidx = pd.date_range(date, date + np.timedelta64(1, 'D'), freq=freq, inclusive='left')
-            dst = dst.interp(time=timeidx)
+            dst = dst.reindex(time=timeidx, method='nearest', tolerance=np.timedelta64(1, 'ms'))
 
             # add gti for single stations
             if "gti" not in dst:
                 dst = dst.assign({
                     "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan)),
-                    "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape, 255))
+                    "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape, np.nan))
                 })
                 dst.gti.attrs.update({
                     "serial":"",

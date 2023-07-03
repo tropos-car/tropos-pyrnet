@@ -216,6 +216,13 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
     if not isinstance(dates,Iterable):
         dates = [dates]
 
+    if lvl=='l1a':
+        timevar = 'gpstime'
+    elif lvl=='l1b':
+        timevar = 'time'
+    else:
+        raise ValueError(f"lvl {lvl} not implemented.")
+
     fnames = []
     for date in dates:
         fnames.extend(
@@ -242,23 +249,23 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
             dst = dst.drop_vars(drop_vars)
 
         # unify time and station dimension to speed up merging
-        date = dst.time.values[0].astype("datetime64[D]")
+        date = dst[timevar].values[0].astype("datetime64[D]")
         timeidx = pd.date_range(date, date + np.timedelta64(1, 'D'), freq=freq, inclusive='left')
-        dst = dst.interp(time=timeidx)
+        dst = dst.reindex({timevar: timeidx}, method='nearest',tolerance=np.timedelta64(1,'ms'))
         dst = dst.reindex({"station": stations})
 
         # add gti for single stations
         if "gti" not in dst:
             dst = dst.assign({
-                "gti": (("time","station"), np.full(dst.ghi.values.shape,np.nan)),
-                "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape,255))
+                "gti": ((timevar,"station"), np.full(dst.ghi.values.shape,np.nan)),
+                "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape,np.nan))
             })
 
         # merge
         if i == 0:
             ds = dst.copy()
         else:
-            overwrite_vars = [v for v in dst if "time" not in dst[v].dims]
+            overwrite_vars = [v for v in dst if timevar not in dst[v].dims]
             # ds = ds.concat(dst,dim='time',
             #                data_vars='minimal',
             #                coords='minimal',
