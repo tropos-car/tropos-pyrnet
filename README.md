@@ -1,3 +1,6 @@
+[![Documentation Status](https://readthedocs.org/projects/pyrnet/badge/?version=latest)](https://pyrnet.readthedocs.io/en/latest/?badge=latest)
+
+
 # PyrNet
 Repository to work collaborative on PyrNet data from Tropos-Thredds server.
 
