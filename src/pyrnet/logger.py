@@ -203,7 +203,7 @@ def get_adc_time(rec_adc):
     return ta
 
 # %% ../../nbs/pyrnet/logger.ipynb 24
-def sync_adc_time(adctime, gpstime, iadc):
+def sync_adc_time(adctime, gpstime, iadc, check_results=True):
     '''
     Synchronize the ADC time to the GPS records
 
@@ -215,6 +215,9 @@ def sync_adc_time(adctime, gpstime, iadc):
         GPS time
     iadc: ndarray of int
         Index of the last ADC sample before a GPS record has been stored.
+    check_results: bool
+        If True, check plausibility of fitted slope and offset (abs(slope)<10s/day; abs(offset)<2s).
+        The default is True
 
     Returns
     -------
@@ -234,11 +237,20 @@ def sync_adc_time(adctime, gpstime, iadc):
     a,b = linregress(t1,t2)[:2]
     t = gpstime[0]+ta*a+b.astype('timedelta64[ms]')
 
+    drift = (1/a-1)*86400
     logger.info('Sync ADC time to GPS Fit Summary:')
-    logger.info('|-- Drift  : {0:7.2f} [s/day]'.format( (1/a-1)*86400 ))
+    logger.info('|-- Drift  : {0:7.2f} [s/day]'.format(drift))
     logger.info('|-- Slope  : {0:13.8f}'.format(a))
     logger.info('|-- Offset : {0:7.2f} [s]'.format(b/1000))
     logger.info('|-- Jitter : {0:7.2f} [ms]'.format(np.std(t2-(a*t1+b))))
+    
+    if check_results:
+        if np.abs(drift)>10:
+            logger.warning("Absolute ADC drift larger than 10 s/day.")
+            return None
+        if np.abs(b/1000)>2:
+            logger.warning("Absolute Offset larger than 2 seconds.")
+            return None
     return t
 
 # %% ../../nbs/pyrnet/logger.ipynb 36
@@ -317,7 +329,7 @@ def resample_mean(ds,freq='1s'):
                                    return_inverse=True,
                                    return_counts=True)
 
-    # apply to all time dependend variables
+    # apply to all time dependent variables
     for var in ds:
         if 'time' in ds[var].dims:
             # replace time dimension with time_resampled

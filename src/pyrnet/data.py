@@ -443,6 +443,10 @@ def to_l1b(
         gpstime = ds_l1a.gpstime.values,
         iadc = ds_l1a.iadc.squeeze().values.astype(int)
     )
+    
+    if adctime is None:
+        logger.warning(f"Could not fit GPS to ADC time for file {fname}. Skip.")
+        return None
 
     # 3. Create new dataset (l1b)
     ds_l1b = ds_l1a.drop_dims('gpstime')
