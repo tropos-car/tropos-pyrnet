@@ -245,11 +245,8 @@ def sync_adc_time(adctime, gpstime, iadc, check_results=True):
     logger.info('|-- Jitter : {0:7.2f} [ms]'.format(np.std(t2-(a*t1+b))))
     
     if check_results:
-        if np.abs(drift)>10:
-            logger.warning("Absolute ADC drift larger than 10 s/day.")
-            return None
-        if np.abs(b/1000)>2:
-            logger.warning("Absolute Offset larger than 2 seconds.")
+        if np.abs(drift)>5:
+            logger.warning("Absolute ADC drift larger than 5 s/day.")
             return None
     return t
 
