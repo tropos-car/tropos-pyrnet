@@ -16,7 +16,7 @@ Raw logger data can be procesed using the commandline.
 
 First install the package:
 ```
-$ python -m pip install git+https://github.com/jonas-witthuhn/PyrNet.git
+$ python -m pip install git+https://github.com/tropos-car/tropos-pyrnet
 ```
 
 For processing via command line look at
