@@ -237,13 +237,15 @@ def add_encoding(ds, vencode=None):
     for k, v in vencode.items():
         if k not in ds.keys():
             continue
-        ds[k].encoding = v
+        for ki in [key for key in ds if key.startswith(k)]:
+            ds[ki].encoding = v
         if "valid_range" not in vencode[k]:
             continue
         # add valid_range to variable attributes
-        ds[k].attrs.update({
-            'valid_range': vencode[k]['valid_range']
-        })
+        for ki in [key for key in ds if key.startswith(k)]:
+            ds[ki].attrs.update({
+                'valid_range': vencode[k]['valid_range']
+            })
 
     # special treatment of time and flux variables
     if ds.processing_level=='l1a':
