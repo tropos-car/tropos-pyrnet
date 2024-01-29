@@ -12,7 +12,7 @@ Recommended start at /nbs/pyrnet/pyrnet.ipynb
 -> Clone the repository and try it yourself!
 
 # Processing  data via command line
-Raw logger data can be procesed using the commandline.
+Raw logger data can be processed using the commandline.
 
 First install the package:
 ```
