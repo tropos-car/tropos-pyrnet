@@ -1,0 +1,26 @@
+{
+  "title": "TROPOS - PyrNet",
+  "creators": [
+    {
+      "name": "Witthuhn, Jonas",
+      "orcid": "0000-0002-4818-5011",
+      "affiliation": "Leibniz Institute for Tropospheric Research (TROPOS), Leipzig, Germany "
+    },
+    {
+      "name": "Deneke, Hartwig",
+      "orcid": "0000-0001-8595-533X",
+      "affiliation": "Leibniz Institute for Tropospheric Research (TROPOS), Leipzig, Germany "
+    }
+  ],
+  "keywords": [
+    "solar radiation",
+    "pyranometer",
+    "small-scale variability",
+    "global horizontal irradiance",
+    "shortwave broadband",
+    "irradiance"
+  ],
+  "related_identifiers": [
+    {"relation": "isDocumentedBy", "identifier": "https://pyrnet.readthedocs.io/"}
+  ]
+}
