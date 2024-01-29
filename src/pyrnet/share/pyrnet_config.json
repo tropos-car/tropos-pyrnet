@@ -29,6 +29,7 @@
   "average_latlon": true, //average lat lon over maintenance interval, or not
   "stripminutes": 5, // Minutes to strip from data at start and end to avoid maintenance influence
   "radflux_varname": ["ghi","gti"], // variable names of the rad_flux variables -  same as in cfmeta
+  "l1b_resample_stats": ["min", "max", "std"], // additional statistics from resample for flux variables
   // Configuration for online report requests, minimum information is "base_url"
   "online": {
     "base_url": "https://lgs-car.limesurvey.net/admin/remotecontrol",
