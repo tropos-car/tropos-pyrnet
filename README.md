@@ -2,7 +2,7 @@
 
 
 # PyrNet
-Repository to work collaborative on PyrNet data from Tropos-Thredds server.
+Repository to work collaborative on PyrNet data.
 
 # Notebooks
 The notebooks in /nbs/ directory include examples and functions how to read PyrNet data from Thredds server.
