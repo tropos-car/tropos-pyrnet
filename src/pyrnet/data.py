@@ -534,7 +534,7 @@ def to_l1b(
 
     # 3. Create new dataset (l1b)
     ds_l1b = ds_l1a.drop_dims('gpstime')
-    ds_l1b = ds_l1b.drop_vars(['ghi_qc','gti_qc']) # keep only time dependend variables
+    ds_l1b = ds_l1b.drop_vars(['ghi_qc','gti_qc']) # keep only time dependent variables
     ds_l1b = ds_l1b.assign({'time': ('adctime', adctime)})
     ds_l1b = ds_l1b.swap_dims({"adctime":"time"})
     ds_l1b = ds_l1b.drop_vars("adctime")
@@ -602,9 +602,11 @@ def to_l1b(
     )
     
     # add standard names for new variables
+    # apply for variables if both in config['radflux_varname'] and ds_l1b.keys()
+    radflux_vars = list(set(config['radflux_varname'])&set(ds_l1b.keys()))
     ds_l1b = res[0]
     for i, method in enumerate(methods[1:]):
-        for var in config["radflux_varname"]:
+        for var in radflux_vars:
             ds_l1b[f"{var}_{method}"] = res[i+1][var]
             ds_l1b[f"{var}_{method}"].attrs.update({
                 "standard_name": f"{method}_"+ds_l1b[f"{var}_{method}"].attrs["standard_name"]
