@@ -24,12 +24,12 @@
         "units": "K",
         "long_name": "air temperature",
         "standard_name": "air_temperature",
-        "scale_factor": 0.12903225806451613,
+        "scale_factor": 1e-4,
         "add_offset": 253.15,
         "_FillValue": 65535,
         "valid_range": [
           0,
-          775
+          10000
         ],
         "zlib": true
       }
@@ -40,11 +40,11 @@
         "units": "1",
         "long_name": "air relative humidity",
         "standard_name": "relative_humidity",
-        "scale_factor": 0.0012903225806451613,
+        "scale_factor": 1e-4,
         "add_offset": 0.0,
         "valid_range": [
           0,
-          775
+          10000
         ],
         "_FillValue": 65535,
         "zlib": true
@@ -55,11 +55,11 @@
       "attributes": {
         "units": "V",
         "standard_name": "battery_voltage",
-        "scale_factor": 0.0064516129032258064,
+        "scale_factor": 1e-3,
         "add_offset": 0.0,
         "valid_range": [
           0,
-          1023
+          6400
         ],
         "_FillValue": 65535,
         "zlib": true
@@ -68,14 +68,14 @@
     "ghi": {
       "type": "u2",
       "attributes": {
-        "units": "V",
+        "units": "W m-2",
         "long_name": "downwelling shortwave flux",
         "standard_name": "downwelling_shortwave_flux_in_air",
-        "scale_factor": 1.075268817204301e-05,
+        "scale_factor": 0.025,
         "add_offset": 0.0,
         "valid_range": [
           0,
-          1023
+          60000
         ],
         "_FillValue": 65535,
         "zlib": true
@@ -87,11 +87,11 @@
         "units": "V",
         "long_name": "downwelling shortwave flux measured on secondary platform, might be tilted",
         "standard_name": "downwelling_shortwave_flux_in_air",
-        "scale_factor": 1.075268817204301e-05,
+        "scale_factor": 0.025,
         "add_offset": 0.0,
         "valid_range": [
           0,
-          1023
+          60000
         ],
         "_FillValue": 65535,
         "zlib": true
@@ -141,7 +141,7 @@
       "attributes": {
         "standard_name": "earth_sun_distance",
         "units": "AU",
-        "scale_factor": 0.000001,
+        "scale_factor": 1e-6,
         "add_offset": 0.98,
         "valid_range": [
           0,

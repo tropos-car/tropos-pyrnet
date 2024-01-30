@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['pyrnet_version', 'logger', 'update_coverage_meta', 'stretch_resolution', 'merge_ds', 'to_netcdf', 'resample',
-           'get_config', 'get_cfmeta', 'add_encoding', 'to_l1a', 'to_l1b']
+           'get_config', 'get_sensor_config', 'get_cfmeta', 'calc_encoding', 'add_encoding', 'to_l1a', 'to_l1b']
 
 # %% ../../nbs/pyrnet/data.ipynb 2
 import os
@@ -171,6 +171,16 @@ def get_config(config: dict|None = None) -> dict:
             config[fn] =  pkg_res.resource_filename("pyrnet", cfiles[fn])
     return config
 
+def get_sensor_config(sconfig: dict|None = None) -> dict:
+    """ Read the sensor configuration from the default json file and merge if needed. 
+    """
+    fn_config = pkg_res.resource_filename("pyrnet", "share/pyrnet_sensor_config.json")
+    default_config = pyrutils.read_json(fn_config)
+    if sconfig is None:
+        sconfig = default_config
+    sconfig = {**default_config, **sconfig}
+    return sconfig
+    
 def get_cfmeta(config: dict|None = None) -> dict:
     """Read global and variable attributes and encoding from cfmeta.json
     """
@@ -187,8 +197,22 @@ def get_cfmeta(config: dict|None = None) -> dict:
     vattrs, vencode = pyrutils.get_attrs_enc(d)
     return gattrs ,vattrs, vencode
 
+def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
+    ADCfac = ADCV / (2**ADCbits-1) # Last bit is reserved 
+    sencoding ={}
+    for k,v in sconfig.items():
+        sencoding.update(
+            {k: dict(
+                units=v['units'],
+                scale_factor=v['C']*ADCfac/v['gain'],
+                add_offset=v['offset'],
+                valid_range= [0, min(((2**ADCbits-1), int(v['Vmax']*v['gain']/ADCfac)))]
+            )}
+        )
+    return sencoding
 
-# %% ../../nbs/pyrnet/data.ipynb 16
+
+# %% ../../nbs/pyrnet/data.ipynb 18
 def add_encoding(ds, vencode=None):
     """
     Set valid_range attribute and encoding to every variable of the dataset.
@@ -257,25 +281,24 @@ def add_encoding(ds, vencode=None):
             "units": f"milliseconds",
         })
     elif ds.processing_level == 'l1b':
-        ds = stretch_resolution(ds)
-        # special treatment for flux variables
-        for k in ['ghi', 'gti']:
-            if k not in ds:
-                continue
-            # add encoding
-            dtype = ds[k].encoding['dtype']
-            int_limit = np.iinfo(dtype).max
-            valid_range = [0, int_limit - 1]
-            scale_factor = 1500. / float(int_limit - 1)
-            ds[k].encoding.update({
-                "scale_factor": scale_factor,
-                "_FillValue": int_limit,
-            })
-            ds[k].attrs.update({
-                "units": "W m-2",
-                "valid_range": valid_range
-            })
-
+        # ds = stretch_resolution(ds)
+        # # special treatment for flux variables
+        # for k in ['ghi', 'gti']:
+        #     if k not in ds:
+        #         continue
+        #     # add encoding
+        #     dtype = ds[k].encoding['dtype']
+        #     int_limit = np.iinfo(dtype).max
+        #     valid_range = [0, int_limit - 1]
+        #     scale_factor = 1500. / float(int_limit - 1)
+        #     ds[k].encoding.update({
+        #         "scale_factor": scale_factor,
+        #         "_FillValue": int_limit,
+        #     })
+        #     ds[k].attrs.update({
+        #         "units": "W m-2",
+        #         "valid_range": valid_range
+        #     })
         ds["time"].encoding.update({
             "dtype": 'f8',
             "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
@@ -284,7 +307,7 @@ def add_encoding(ds, vencode=None):
         raise ValueError("Dataset has no 'processing_level' attribute.")
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 18
+# %% ../../nbs/pyrnet/data.ipynb 22
 def to_l1a(
         fname : str,
         *,
@@ -292,6 +315,7 @@ def to_l1a(
         report: dict|pd.DataFrame|None,
         date_of_measure : np.datetime64 = np.datetime64("now"),
         config: dict|None = None,
+        sconfig: dict|None = None,
         global_attrs: dict|None = None
 ) -> xr.Dataset|None:
     """
@@ -315,6 +339,8 @@ def to_l1a(
             * cfjson -> path to cfmeta.json, the default is "../share/pyrnet_cfmeta.json"
             * stripminutes -> number of minutes to be stripped from the data at start and end,
                 the default is 5.
+    sconfig: dict
+        Config for ADC and amplifier for each sensor. The default is "../share/pyrnet_sensor_config.json"
     global_attrs: dict
         Additional global attributes for the Dataset. (Overrides cfmeta.json attributes)
     Returns
@@ -322,9 +348,25 @@ def to_l1a(
     xarray.Dataset
         Raw Logger data for one measurement periode.
     """
+    ADCV = 3.3
+    ADCbits = 10
+    
+    # load and merge  default config
     config = get_config(config)
     gattrs, vattrs, vencode = get_cfmeta(config)
-
+    
+    # update encoding with sensor config for l1a
+    sconfig = get_sensor_config(sconfig)
+    sencoding = calc_encoding(sconfig, ADCV=ADCV, ADCbits=ADCbits)
+    # update encoding with sensor config for l1a
+    for var, enc in sencoding.items():
+        for k, v in enc.items():
+            if k in ["valid_range", "units"]:
+                vattrs = assoc_in(vattrs, [var, k], v)
+            else:
+                vencode = assoc_in(vencode, [var, k], v)
+                
+    # update additional global attributes
     if global_attrs is not None:
         gattrs.update(global_attrs)
 
@@ -342,7 +384,7 @@ def to_l1a(
 
     # ADC to Volts
     # Drop time and internal battery sensor output (columns 0 and 1)
-    adc_volts = 3.3 * rec_adc[:,2:] / 1023.
+    adc_volts = ADCV * rec_adc[:,2:] / float(2**ADCbits - 1)
 
     # 2. Get Logbook maintenance quality flags
     key = f"{station:03d}"
@@ -408,13 +450,23 @@ def to_l1a(
         adc_volts = np.concatenate((adc_volts,-1*np.ones(adc_volts.shape[0])[:,None]),axis=1)
 
     # 8. Make xarray Dataset
+    values = {}
+    for k,v in sconfig.items():
+        offset = sconfig[k]["offset"]
+        gain = sconfig[k]["gain"]
+        C = sconfig[k]["C"]
+        iadc = sconfig[k]["iadc"]
+        volts = adc_volts[:,iadc][:,None]
+        values.update(
+            {k: offset + C*volts/gain}
+        )
     ds = xr.Dataset(
         data_vars={
-            "ghi": (("adctime","station"), adc_volts[:,2][:,None] / 300.), # [V]
-            "gti": (("adctime","station"), adc_volts[:,4][:,None] / 300.), # [V]
-            "ta": (("adctime","station"), 253.15 + 20.*2.*adc_volts[:,0][:,None]), # [K]
-            "rh": (("adctime","station"), 0.2*2.*adc_volts[:,1][:,None]), # [-]
-            "battery_voltage": (("adctime","station"), 2.*adc_volts[:,3][:,None]), # [V]
+            "ghi": (("adctime","station"), values["ghi"]), # [V]
+            "gti": (("adctime","station"), values["gti"]), # [V]
+            "ta": (("adctime","station"), values["ta"]), # [K]
+            "rh": (("adctime","station"), values["rh"]), # [-]
+            "battery_voltage": (("adctime","station"), values["battery_voltage"]), # [V]
             "lat": (("gpstime","station"), rec_gprmc.lat[:,None]), # [degN]
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
             "ghi_qc": ("station", [qc_main]),
@@ -446,7 +498,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 50
+# %% ../../nbs/pyrnet/data.ipynb 55
 def to_l1b(
         fname: str,
         *,
@@ -522,22 +574,18 @@ def to_l1b(
     logger.info(f">> calibration factor(s)={cfac}")
 
 
-    # calibrate radiation flux with gain=300
+    # calibrate radflux variables
     for i, radflx in enumerate(config['radflux_varname']):
         if cfac[i] is None:
             # drop if calibration/instrument don't exist (probably secondary pyranometer).
             ds_l1b = ds_l1b.drop_vars([var for var in ds_l1b if radflx in var])
             continue
         ds_l1b[radflx].values = ds_l1b[radflx].values*1e6/(cfac[i]) # V -> W m-2
-        ds_l1b[radflx].attrs['units'] = "W m-2",
         ds_l1b[radflx].attrs.update({
-            "units": "W m-2",
             "serial": serial[i],
-            "calibration_factor": cfac[i]
+            "calibration_factor": cfac[i],
+            "calibration_function": "flux (W m-2) = flux (V) * calibration_factor (W m-2 V-1)",
         })
-        # ds_l1b[radflx].encoding.update({
-        #     'scale_factor': ds_l1b[radflx].encoding['scale_factor']*1e6/(cfac[i])
-        # })
 
 
     # 6. resample to desired resolution
@@ -566,8 +614,8 @@ def to_l1b(
     ds_l1b = ds_l1b.expand_dims(station_dim, axis=-1)
     
     # stretch valid range to not lose resolution due to averaging
-    # TODO: revise stretch resolution 
-    ds_l1b = stretch_resolution(ds_l1b)
+    # TODO: remove stretch resolution 
+    # ds_l1b = stretch_resolution(ds_l1b)
 
     # 7. Interpolate GPS coordinates to l1b time
     ds_gps = ds_l1a.drop_dims("adctime")
@@ -603,7 +651,6 @@ def to_l1b(
     # update attributes and encoding
     for key in ['szen', 'sazi','esd']:
         ds_l1b[key].attrs.update(vattrs[key])
-        # ds_l1b[key].encoding.update(vencode[key])
 
     # add global coverage attributes
     ds_l1b = update_coverage_meta(ds_l1b, timevar="time")
