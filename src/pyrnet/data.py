@@ -212,7 +212,7 @@ def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
     return sencoding
 
 
-# %% ../../nbs/pyrnet/data.ipynb 18
+# %% ../../nbs/pyrnet/data.ipynb 17
 def add_encoding(ds, vencode=None):
     """
     Set valid_range attribute and encoding to every variable of the dataset.
@@ -293,7 +293,7 @@ def add_encoding(ds, vencode=None):
         raise ValueError("Dataset has no 'processing_level' attribute.")
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 22
+# %% ../../nbs/pyrnet/data.ipynb 21
 def to_l1a(
         fname : str,
         *,
@@ -484,7 +484,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 54
+# %% ../../nbs/pyrnet/data.ipynb 53
 def to_l1b(
         fname: str,
         *,
@@ -600,10 +600,6 @@ def to_l1b(
     
     # add station dimension back again
     ds_l1b = ds_l1b.expand_dims(station_dim, axis=-1)
-    
-    # stretch valid range to not lose resolution due to averaging
-    # TODO: remove stretch resolution 
-    # ds_l1b = stretch_resolution(ds_l1b)
 
     # 7. Interpolate GPS coordinates to l1b time
     ds_gps = ds_l1a.drop_dims("adctime")
