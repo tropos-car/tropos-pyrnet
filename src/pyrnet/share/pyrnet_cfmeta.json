@@ -256,6 +256,13 @@
         "_FillValue": 4294967295,
         "zlib": true
       }
+    },
+    "time": {
+      "type": "f8",
+      "attributes": {
+        "standard_name": "time",
+        "zlib": true
+      }
     }
   }
 }

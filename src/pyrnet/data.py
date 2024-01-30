@@ -259,10 +259,10 @@ def add_encoding(ds, vencode=None):
 
     # add encoding to Dataset
     for k, v in vencode.items():
-        if k not in ds.keys():
+        if k not in ds:
             continue
         for ki in [key for key in ds if key.startswith(k)]:
-            ds[ki].encoding = v
+            ds[ki].encoding.update(v)
         if "valid_range" not in vencode[k]:
             continue
         # add valid_range to variable attributes
@@ -270,37 +270,23 @@ def add_encoding(ds, vencode=None):
             ds[ki].attrs.update({
                 'valid_range': vencode[k]['valid_range']
             })
-
-    # special treatment of time and flux variables
+            
+    # add encoding to coords
     if ds.processing_level=='l1a':
         ds["gpstime"].encoding.update({
-            "dtype": 'f8',
+            **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
         })
         ds["adctime"].encoding.update({
-            "units": f"milliseconds",
+            **vencode["adctime"],
+            "units": "milliseconds"
+        })
+        ds["station"].encoding.update({
+            **vencode["station"]
         })
     elif ds.processing_level == 'l1b':
-        # ds = stretch_resolution(ds)
-        # # special treatment for flux variables
-        # for k in ['ghi', 'gti']:
-        #     if k not in ds:
-        #         continue
-        #     # add encoding
-        #     dtype = ds[k].encoding['dtype']
-        #     int_limit = np.iinfo(dtype).max
-        #     valid_range = [0, int_limit - 1]
-        #     scale_factor = 1500. / float(int_limit - 1)
-        #     ds[k].encoding.update({
-        #         "scale_factor": scale_factor,
-        #         "_FillValue": int_limit,
-        #     })
-        #     ds[k].attrs.update({
-        #         "units": "W m-2",
-        #         "valid_range": valid_range
-        #     })
         ds["time"].encoding.update({
-            "dtype": 'f8',
+            **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
         })
     else:
@@ -498,7 +484,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 55
+# %% ../../nbs/pyrnet/data.ipynb 54
 def to_l1b(
         fname: str,
         *,
