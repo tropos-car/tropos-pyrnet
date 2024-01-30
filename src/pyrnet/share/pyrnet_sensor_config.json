@@ -1,0 +1,42 @@
+{
+    "ta": {
+        "units": "K", // unit of ADC measurement determined by C
+        "iadc": 0, // adc channel
+        "C": 20.0, // 100K / 5V
+        "offset": 253.15, // K at 0V
+        "gain": 0.5, // measured over voltage splitter
+        "Vmax": 5.0 // V output at sensor
+    },
+    "rh": {
+        "units": "1", // unit of ADC measurement determined by C
+        "iadc": 1, // adc channel
+        "C": 0.2, // 100% / 5 V
+        "offset": 0.0, // 0 at 0V
+        "gain": 0.5, // measured over voltage splitter
+        "Vmax": 5.0 // 5V output at sensor
+    },
+    "battery_voltage": {
+        "units": "V",// unit of ADC measurement determined by C
+        "iadc": 3, // adc channel
+        "C": 1.0, // V(batt)/V
+        "offset": 0.0, // V at 0V
+        "gain": 0.5, // measured over voltage splitter
+        "Vmax": 6.4 // V output at sensor
+    },
+    "ghi": {
+        "units": "V",// unit of ADC measurement determined by C
+        "iadc": 2, // adc channel
+        "C": 1.0, // Vsensor/Vmeasured
+        "offset": 0.0, // V at 0V
+        "gain": 300.0, // amplified
+        "Vmax": 0.012 // (1500Wm-2 * 8e-6 V/Wm-2) maximum output at sensor, assuming max sensitivity of 8e-6V/Wm-2
+    },
+    "gti": {
+        "units": "V",// unit of ADC measurement determined by C
+        "iadc": 4, // adc channel
+        "C": 1.0, // Vsensor/Vmeasured
+        "offset": 0.0, // V at 0V
+        "gain": 300.0, // amplified
+        "Vmax": 0.012 // (1500Wm-2 * 8e-6 V/Wm-2) maximum output at sensor, assuming max sensitivity of 8e-6V/Wm-2
+    }
+}
