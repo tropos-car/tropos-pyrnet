@@ -218,7 +218,7 @@
         "add_offset": -90,
         "valid_range": [
           0,
-          180e6
+          180000000
         ],
         "_FillValue": 4294967295,
         "zlib": true
@@ -233,7 +233,7 @@
         "add_offset": -180,
         "valid_range": [
           0,
-          360e6
+          360000000
         ],
         "_FillValue": 4294967295,
         "zlib": true
