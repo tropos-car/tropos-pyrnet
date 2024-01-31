@@ -209,8 +209,10 @@ def merge(input_files, output_file,freq=None,timevar=None):
             # add gti for single stations
             if "gti" not in dst:
                 dst = dst.assign({
-                    "gti": (("time", "station"), np.full(dst.ghi.values.shape, np.nan)),
-                    "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape, np.nan))
+                    "gti": (dst.ghi.dims, np.full(dst.ghi.values.shape, np.nan)),
+                    "qc_flag_gti": (dst.qc_flag_ghi.dims, np.full(dst.qc_flag_ghi.values.shape, 0)),
+                    "maintenance_flag_gti": (
+                    dst.maintenance_flag_ghi.dims, np.full(dst.maintenance_flag_ghi.values.shape, 0))
                 })
                 dst.gti.attrs.update({
                     "serial":"",

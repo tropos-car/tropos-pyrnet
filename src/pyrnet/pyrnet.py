@@ -139,7 +139,7 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
             c = catalog.query(f'station=={st} & collection=={col}').reset_index()
             startdts = c["startdt"]
             enddts = c["enddt"]
-            # get file index with maintenance interaval including date
+            # get file index with maintenance interval including date
             idate_start = np.sum(date>=startdts)-1
             idate_end = np.sum(date>enddts)
             if (idate_start==-1) or (idate_end==enddts.size):
@@ -213,7 +213,7 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
         Merged Dataset including all dates and stations specified by the input.
     """
 
-    if not isinstance(dates,Iterable):
+    if not isinstance(dates, Iterable):
         dates = [dates]
 
     if lvl=='l1a':
@@ -257,8 +257,9 @@ def read_thredds(dates, *, campaign, stations=None, lvl='l1b', collection=None, 
         # add gti for single stations
         if "gti" not in dst:
             dst = dst.assign({
-                "gti": ((timevar,"station"), np.full(dst.ghi.values.shape,np.nan)),
-                "gti_qc": (("station"), np.full(dst.ghi_qc.values.shape,np.nan))
+                "gti": (dst.ghi.dims, np.full(dst.ghi.values.shape,np.nan)),
+                "qc_flag_gti": (dst.qc_flag_ghi.dims, np.full(dst.qc_flag_ghi.values.shape,0)),
+                "maintenance_flag_gti": (dst.maintenance_flag_ghi.dims, np.full(dst.maintenance_flag_ghi.values.shape,0))
             })
 
         # merge
