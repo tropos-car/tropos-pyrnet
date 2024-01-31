@@ -387,8 +387,8 @@ def to_l1a(
         warnings.warn(f"No report for station {station} available.")
         qc_main = pyrreports.get_qcflag(4,3)
         qc_extra = pyrreports.get_qcflag(4,3)
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], "No maintenance report!")
-        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], "No maintenance report!")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], "No maintenance report!")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], "No maintenance report!")
     else:
         qc_main = pyrreports.get_qcflag(
             qc_clean=report[key]['clean'],
@@ -399,12 +399,12 @@ def to_l1a(
             qc_level=report[key]['align2']
         )
         # add qc notes
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], report[key]["note_general"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], report[key]["note_general"])
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_clean"], report[key]["note_clean"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_clean"], report[key]["note_clean2"])
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_level"], report[key]["note_align"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_clean"], report[key]["note_clean"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_clean"], report[key]["note_clean2"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_level"], report[key]["note_align"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], report[key]["note_align2"])
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -455,8 +455,8 @@ def to_l1a(
             "battery_voltage": (("adctime","station"), values["battery_voltage"]), # [V]
             "lat": (("gpstime","station"), rec_gprmc.lat[:,None]), # [degN]
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
-            "ghi_qc": ("station", [qc_main]),
-            "gti_qc": ("station", [qc_extra]),
+            "maintenance_flag_ghi": ("station", [qc_main]),
+            "maintenance_flag_gti": ("station", [qc_extra]),
             "iadc": (("gpstime", "station"), rec_gprmc.iadc[:,None])
         },
         coords={
@@ -484,7 +484,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 53
+# %% ../../nbs/pyrnet/data.ipynb 54
 def to_l1b(
         fname: str,
         *,
@@ -520,7 +520,7 @@ def to_l1b(
 
     # 3. Create new dataset (l1b)
     ds_l1b = ds_l1a.drop_dims('gpstime')
-    ds_l1b = ds_l1b.drop_vars(['ghi_qc','gti_qc']) # keep only time dependent variables
+    ds_l1b = ds_l1b.drop_vars(['maintenance_flag_ghi','maintenance_flag_gti']) # keep only time dependent variables
     ds_l1b = ds_l1b.assign({'time': ('adctime', adctime)})
     ds_l1b = ds_l1b.swap_dims({"adctime":"time"})
     ds_l1b = ds_l1b.drop_vars("adctime")

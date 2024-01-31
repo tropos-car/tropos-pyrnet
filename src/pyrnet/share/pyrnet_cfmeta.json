@@ -151,7 +151,7 @@
         "zlib": true
       }
     },
-    "ghi_qc": {
+    "maintenance_flag_ghi": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",
@@ -180,7 +180,7 @@
         "zlib": true
       }
     },
-    "gti_qc": {
+    "maintenance_flag_gti": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",
