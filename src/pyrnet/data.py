@@ -484,7 +484,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 53
+# %% ../../nbs/pyrnet/data.ipynb 54
 def to_l1b(
         fname: str,
         *,
