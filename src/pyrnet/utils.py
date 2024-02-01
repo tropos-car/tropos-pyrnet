@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['EPOCH_JD_2000_0', 'to_datetime64', 'read_json', 'pick', 'omit', 'get_var_attrs', 'get_attrs_enc', 'get_xy_coords',
-           'pairwise_distance_matrix', 'gauss_fwin_fwhm', 'gauss_fwin', 'smooth_fwhm', 'smooth']
+           'pairwise_distance_matrix', 'gauss_fwin_fwhm', 'gauss_fwin', 'smooth_fwhm', 'smooth', 'calc_apparent_coszen',
+           'correct', 'bias_optimize_pitch', 'bias_optimize_yaw', 'bias_optimize']
 
 # %% ../../nbs/pyrnet/utils.ipynb 2
 from numpy.typing import ArrayLike, NDArray
@@ -234,3 +235,50 @@ def smooth(y: ArrayLike, J: float, axis: int = 0) -> NDArray:
     fwhm = 60.*2**J
     return smooth_fwhm(y, fwhm, axis=axis)
 
+
+# %% ../../nbs/pyrnet/utils.ipynb 26
+def calc_apparent_coszen(pitch,yaw,zen,azi):
+    """
+    Calculate cosine of apparent zenith angle
+
+    Parameters:
+    -----------
+    pitch: float, array of float
+        Platform pitch angle (degrees) - Angle between vertical and platfrom normal vector, e.g. platform zenith angle
+    yaw: float, array of float
+        Platform yaw angle (degrees) - Angle positive clockwise from north, e.g. platfrom azimuth angle
+    zen: flaot, array of float
+        Solar zenith angle (degrees)
+    azi: float, array of float
+        Solar azimuth angle (degrees)
+
+    Returns:
+    --------
+    coszen: float, array of float
+        The cosine of the platform apparent zenith angle (angle between solar and platform normal vector)
+    """
+    #calculate the angle between radiometer normal to sun position vector
+    p = np.deg2rad(-1.*pitch)
+    z = np.deg2rad(zen)
+    g = np.deg2rad(azi - yaw) 
+    coszen = -np.sin(z)*np.sin(p)*np.cos(g) + np.cos(z)*np.cos(p)
+    return coszen # cos of angle between radiometer normal and solar vector
+
+def correct(dp, dy, szen, sazi):
+    tczen = calc_apparent_coszen(dp, dy, szen, sazi)
+    return np.cos(np.deg2rad(szen))/tczen
+
+def bias_optimize_pitch(vals,ghi,ghi_t,zen,azi,dp):
+    dy = vals
+    F = ghi_t*correct(dp,dy,zen,azi)
+    return np.nanmean(np.abs(ghi-F))
+
+def bias_optimize_yaw(vals,ghi,ghi_t,zen,azi,dy):
+    dp = vals
+    F = ghi_t*correct(dp,dy,zen,azi)
+    return np.nanmean(np.abs(ghi-F))
+
+def bias_optimize(vals,ghi,ghi_t,zen,azi):
+    dp, dy = vals
+    F = ghi_t*correct(dp, dy, zen, azi)
+    return np.nanmean(np.abs(ghi-F))
