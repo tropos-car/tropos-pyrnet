@@ -16,12 +16,13 @@ import warnings
 
 from trosat import sunpos as sp
 
-import pyrnet as pyrnet_main
-pyrnet_version = pyrnet_main.__version__
-from . import pyrnet
-from . import utils as pyrutils
-from . import logger as pyrlogger
-from . import reports as pyrreports
+import pyrnet
+pyrnet_version = pyrnet.__version__
+import pyrnet.pyrnet
+import pyrnet.utils
+import pyrnet.logger
+import pyrnet.reports
+import pyrnet.qcrad
 
 # logging setup
 logging.basicConfig(
@@ -153,7 +154,7 @@ def get_config(config: dict|None = None) -> dict:
     """
 
     fn_config = pkg_res.resource_filename("pyrnet", "share/pyrnet_config.json")
-    default_config = pyrutils.read_json(fn_config)
+    default_config = pyrnet.utils.read_json(fn_config)
     if config is None:
         config = default_config
     config = {**default_config, **config}
@@ -175,7 +176,7 @@ def get_sensor_config(sconfig: dict|None = None) -> dict:
     """ Read the sensor configuration from the default json file and merge if needed. 
     """
     fn_config = pkg_res.resource_filename("pyrnet", "share/pyrnet_sensor_config.json")
-    default_config = pyrutils.read_json(fn_config)
+    default_config = pyrnet.utils.read_json(fn_config)
     if sconfig is None:
         sconfig = default_config
     sconfig = {**default_config, **sconfig}
@@ -186,15 +187,15 @@ def get_cfmeta(config: dict|None = None) -> dict:
     """
     config= get_config(config)
     # parse the json file
-    cfdict = pyrutils.read_json(config["file_cfmeta"])
+    cfdict = pyrnet.utils.read_json(config["file_cfmeta"])
     # get global attributes:
     gattrs = cfdict['attributes']
     # apply config
     gattrs = {k:v.format_map(config) for k,v in gattrs.items()}
     # get variable attributes
-    d = pyrutils.get_var_attrs(cfdict)
+    d = pyrnet.utils.get_var_attrs(cfdict)
     # split encoding attributes
-    vattrs, vencode = pyrutils.get_attrs_enc(d)
+    vattrs, vencode = pyrnet.utils.get_attrs_enc(d)
     return gattrs ,vattrs, vencode
 
 def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
@@ -293,7 +294,7 @@ def add_encoding(ds, vencode=None):
         raise ValueError("Dataset has no 'processing_level' attribute.")
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 21
+# %% ../../nbs/pyrnet/data.ipynb 22
 def to_l1a(
         fname : str,
         *,
@@ -356,17 +357,17 @@ def to_l1a(
     if global_attrs is not None:
         gattrs.update(global_attrs)
 
-    date_of_measure = pyrutils.to_datetime64(date_of_measure)
+    date_of_measure = pyrnet.utils.to_datetime64(date_of_measure)
 
     # 1. Parse raw file
-    rec_adc, rec_gprmc = pyrlogger.read_records(fname=fname, date_of_measure=date_of_measure)
+    rec_adc, rec_gprmc = pyrnet.logger.read_records(fname=fname, date_of_measure=date_of_measure)
 
     if type(rec_adc)==bool or len(rec_gprmc.time)<3:
         logger.debug("Failed to load the data from the file, because of not enough stable GPS data, or file is empty.")
         return None
 
     # Get ADC time
-    adctime = pyrlogger.get_adc_time(rec_adc)
+    adctime = pyrnet.logger.get_adc_time(rec_adc)
 
     # ADC to Volts
     # Drop time and internal battery sensor output (columns 0 and 1)
@@ -379,32 +380,32 @@ def to_l1a(
         report = {}
     if isinstance(report, pd.DataFrame):
         logger.info(f"Parsing report at date {rec_gprmc.time[-1]}")
-        report = pyrreports.parse_report(report,
+        report = pyrnet.reports.parse_report(report,
                                 date_of_maintenance=rec_gprmc.time[-1])
 
     if key not in report:
         logger.warning(f"No report for station {station} available.")
         warnings.warn(f"No report for station {station} available.")
-        qc_main = pyrreports.get_qcflag(4,3)
-        qc_extra = pyrreports.get_qcflag(4,3)
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], "No maintenance report!")
-        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], "No maintenance report!")
+        qc_main = pyrnet.reports.get_qcflag(4,3)
+        qc_extra = pyrnet.reports.get_qcflag(4,3)
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], "No maintenance report!")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], "No maintenance report!")
     else:
-        qc_main = pyrreports.get_qcflag(
+        qc_main = pyrnet.reports.get_qcflag(
             qc_clean=report[key]['clean'],
             qc_level=report[key]['align']
         )
-        qc_extra = pyrreports.get_qcflag(
+        qc_extra = pyrnet.reports.get_qcflag(
             qc_clean=report[key]['clean2'],
             qc_level=report[key]['align2']
         )
         # add qc notes
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_general"], report[key]["note_general"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_general"], report[key]["note_general"])
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_clean"], report[key]["note_clean"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_clean"], report[key]["note_clean2"])
-        vattrs = assoc_in(vattrs, ["ghi_qc","note_level"], report[key]["note_align"])
-        vattrs = assoc_in(vattrs, ["gti_qc","note_level"], report[key]["note_align2"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], report[key]["note_general"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_clean"], report[key]["note_clean"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_clean"], report[key]["note_clean2"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_level"], report[key]["note_align"])
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], report[key]["note_align2"])
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -415,7 +416,7 @@ def to_l1a(
     })
     # add site information
     if config['sites'] is not None:
-        sites = pyrutils.read_json(config['file_site'])[config['sites']]
+        sites = pyrnet.utils.read_json(config['file_site'])[config['sites']]
         if key in sites:
             gattrs.update({ "site" : sites[key]})
 
@@ -425,7 +426,7 @@ def to_l1a(
     vattrs = assoc_in(vattrs, ["gti","vangle"], 0.)
     # update with angles from mapping file
     if config['gti_angles'] is not None:
-        gti_angles = pyrutils.read_json(config['file_gti_angles'])[config['gti_angles']]
+        gti_angles = pyrnet.utils.read_json(config['file_gti_angles'])[config['gti_angles']]
         if key in gti_angles:
             hangle = np.nan if gti_angles[key][0] is None else gti_angles[key][0]
             vangle = np.nan if gti_angles[key][1] is None else gti_angles[key][1]
@@ -455,8 +456,8 @@ def to_l1a(
             "battery_voltage": (("adctime","station"), values["battery_voltage"]), # [V]
             "lat": (("gpstime","station"), rec_gprmc.lat[:,None]), # [degN]
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
-            "ghi_qc": ("station", [qc_main]),
-            "gti_qc": ("station", [qc_extra]),
+            "maintenance_flag_ghi": ("station", [qc_main]),
+            "maintenance_flag_gti": ("station", [qc_extra]),
             "iadc": (("gpstime", "station"), rec_gprmc.iadc[:,None])
         },
         coords={
@@ -484,7 +485,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 53
+# %% ../../nbs/pyrnet/data.ipynb 59
 def to_l1b(
         fname: str,
         *,
@@ -507,7 +508,7 @@ def to_l1b(
         return None
 
     # 2. Sync GPS to ADC time
-    adctime = pyrlogger.sync_adc_time(
+    adctime = pyrnet.logger.sync_adc_time(
         adctime = ds_l1a.adctime.values,
         gpstime = ds_l1a.gpstime.values,
         iadc = ds_l1a.iadc.squeeze().values.astype(int),
@@ -520,7 +521,7 @@ def to_l1b(
 
     # 3. Create new dataset (l1b)
     ds_l1b = ds_l1a.drop_dims('gpstime')
-    ds_l1b = ds_l1b.drop_vars(['ghi_qc','gti_qc']) # keep only time dependent variables
+    ds_l1b = ds_l1b.drop_vars(['maintenance_flag_ghi','maintenance_flag_gti']) # keep only time dependent variables
     ds_l1b = ds_l1b.assign({'time': ('adctime', adctime)})
     ds_l1b = ds_l1b.swap_dims({"adctime":"time"})
     ds_l1b = ds_l1b.drop_vars("adctime")
@@ -548,7 +549,7 @@ def to_l1b(
 
     # 5. rad flux calibration
     box = ds_l1b.station.values[0]
-    boxnumber, serial, cfac = pyrnet.meta_lookup(
+    boxnumber, serial, cfac = pyrnet.pyrnet.meta_lookup(
         ds_l1b.time.values[0],
         box=box,
         cfile=config['file_calibration'],
@@ -635,6 +636,9 @@ def to_l1b(
     # update attributes and encoding
     for key in ['szen', 'sazi','esd']:
         ds_l1b[key].attrs.update(vattrs[key])
+        
+    # 9. add quality flags
+    ds_l1b = pyrnet.qcrad.add_qc_flags(ds_l1b, config["radflux_varname"])
 
     # add global coverage attributes
     ds_l1b = update_coverage_meta(ds_l1b, timevar="time")

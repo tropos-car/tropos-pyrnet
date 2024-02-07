@@ -40,6 +40,7 @@ Code Documentation
    nbs/logger.ipynb
    nbs/reports.ipynb
    nbs/data.ipynb
+   nbs/qcrad.ipynb
    code_docs/autodocs.rst
 
 
