@@ -169,7 +169,7 @@ def add_qc_flags(ds, vars):
     thres_low[ds.szen.mean("station")>75] = 0.85
     thres_low[ds.szen.mean("station")>75] = 1.15
     all_values_mean = np.nanmean(np.concatenate([dsr[var].values for var in dsr],axis=1),axis=1)
-    for var in config["radflux_varname"]:
+    for var in vars:
         is_tilted = _check_tilted(ds[var])
         ratio = np.ones(dsr[var].shape)
         if np.any(is_tilted):
