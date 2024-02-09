@@ -398,6 +398,7 @@ def to_l1a(
         qc_extra = pyrnet.reports.get_qcflag(4,3)
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], "No maintenance report!")
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], "No maintenance report!")
+        maintenancetime = np.array([rec_gprmc.time.astype('datetime64[ns]')[-1]])
     else:
         qc_main = pyrnet.reports.get_qcflag(
             qc_clean=report[key]['clean'],
@@ -407,6 +408,7 @@ def to_l1a(
             qc_clean=report[key]['clean2'],
             qc_level=report[key]['align2']
         )
+        maintenancetime = np.array([pyrnet.utils.to_datetime64(report[key]["maintenancetime"])]) 
         # add qc notes
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], report[key]["note_general"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], report[key]["note_general"])
@@ -473,7 +475,7 @@ def to_l1a(
         coords={
             "adctime": ("adctime", adctime.astype('timedelta64[ns]')),
             "gpstime": ("gpstime", rec_gprmc.time.astype('datetime64[ns]')),
-            "maintenancetime": ("maintenancetime",[rec_gprmc.time.astype('datetime64[ns]')[0]]),
+            "maintenancetime": ("maintenancetime", maintenancetime),
             "station": ("station", [np.ubyte(station)]),
         },
         attrs=gattrs
