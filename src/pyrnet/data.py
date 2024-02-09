@@ -278,6 +278,10 @@ def add_encoding(ds, vencode=None):
             **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
         })
+        ds["maintenancetime"].encoding.update({
+            **vencode["time"],
+            "units": f"seconds since {np.datetime_as_string(ds.maintenancetime.data[0], unit='D')}T00:00Z",
+        })
         ds["adctime"].encoding.update({
             **vencode["adctime"],
             "units": "milliseconds"
@@ -289,6 +293,10 @@ def add_encoding(ds, vencode=None):
         ds["time"].encoding.update({
             **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
+        })
+        ds["maintenancetime"].encoding.update({
+            **vencode["time"],
+            "units": f"seconds since {np.datetime_as_string(ds.maintenancetime.data[0], unit='D')}T00:00Z",
         })
     else:
         raise ValueError("Dataset has no 'processing_level' attribute.")
@@ -406,6 +414,8 @@ def to_l1a(
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_clean"], report[key]["note_clean2"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_level"], report[key]["note_align"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], report[key]["note_align2"])
+    qc_main = np.ubyte(qc_main)
+    qc_extra = np.ubyte(qc_extra)
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -456,14 +466,15 @@ def to_l1a(
             "battery_voltage": (("adctime","station"), values["battery_voltage"]), # [V]
             "lat": (("gpstime","station"), rec_gprmc.lat[:,None]), # [degN]
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
-            "maintenance_flag_ghi": ("station", [qc_main]),
-            "maintenance_flag_gti": ("station", [qc_extra]),
+            "maintenance_flag_ghi": (("maintenancetime","station"), [[qc_main]]),
+            "maintenance_flag_gti": (("maintenancetime","station"), [[qc_extra]]),
             "iadc": (("gpstime", "station"), rec_gprmc.iadc[:,None])
         },
         coords={
             "adctime": ("adctime", adctime.astype('timedelta64[ns]')),
             "gpstime": ("gpstime", rec_gprmc.time.astype('datetime64[ns]')),
-            "station": ("station", [station]),
+            "maintenancetime": ("maintenancetime",[rec_gprmc.time.astype('datetime64[ns]')[0]]),
+            "station": ("station", [np.ubyte(station)]),
         },
         attrs=gattrs
     )
@@ -485,7 +496,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 59
+# %% ../../nbs/pyrnet/data.ipynb 58
 def to_l1b(
         fname: str,
         *,
