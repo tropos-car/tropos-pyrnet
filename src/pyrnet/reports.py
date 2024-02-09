@@ -15,7 +15,7 @@ from toolz import assoc_in
 
 from . import utils
 
-# %% ../../nbs/pyrnet/reports.ipynb 9
+# %% ../../nbs/pyrnet/reports.ipynb 8
 def get_responses(
         *,
         fn: FilePath | ReadCsvBuffer[bytes] | ReadCsvBuffer[str]|None = None,
@@ -73,7 +73,7 @@ def get_responses(
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 12
+# %% ../../nbs/pyrnet/reports.ipynb 11
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -163,7 +163,7 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 13
+# %% ../../nbs/pyrnet/reports.ipynb 12
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
@@ -192,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 17
+# %% ../../nbs/pyrnet/reports.ipynb 16
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -256,7 +256,7 @@ def parse_report(
         else:
             dtime = mdate - date_of_maintenance
 
-        if (dtime<np.timedelta64(-1,'D')) or (dtime>np.timedelta64(7,'D')):
+        if (dtime<np.timedelta64(-1,'D')) or (dtime>np.timedelta64(10,'D')):
             continue
 
         # store report in dictionary
@@ -271,8 +271,10 @@ def parse_report(
         # merge notes if multiple reports exist
         for nkey in _note_keys:
             new_note = df[_note_keys[nkey]].values[i]
-            update_note = (results[key][nkey]+'; '+new_note).strip('; ')
-            results = assoc_in(results, [key,nkey], update_note)
+            if new_note=="None":
+                continue
+            # update_note = (results[key][nkey]+'; '+new_note).strip('; ')
+            results = assoc_in(results, [key,nkey], new_note) # update_note)
 
         # update marks with most recent report if not None
         for mkey in _mark_keys:
@@ -284,10 +286,12 @@ def parse_report(
             else:
                 new_mark = _alignment_marks[new_mark]
             results = assoc_in(results, [key,mkey], new_mark)
+            # update associated maintenance date
+            results = assoc_in(results, [key,"maintenancetime"], mdate)
+        
     return results
 
-
-# %% ../../nbs/pyrnet/reports.ipynb 21
+# %% ../../nbs/pyrnet/reports.ipynb 20
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
