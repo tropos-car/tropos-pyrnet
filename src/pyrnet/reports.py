@@ -15,7 +15,7 @@ from toolz import assoc_in
 
 from . import utils
 
-# %% ../../nbs/pyrnet/reports.ipynb 9
+# %% ../../nbs/pyrnet/reports.ipynb 8
 def get_responses(
         *,
         fn: FilePath | ReadCsvBuffer[bytes] | ReadCsvBuffer[str]|None = None,
@@ -73,7 +73,7 @@ def get_responses(
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 12
+# %% ../../nbs/pyrnet/reports.ipynb 11
 def read_logbook(lfile):
     '''
     Load logbook file and store it as dictionary of rec arrays with stID keys.
@@ -163,7 +163,7 @@ def read_logbook(lfile):
                 logbook.update({str(A.box[0]):A})
     return logbook
 
-# %% ../../nbs/pyrnet/reports.ipynb 13
+# %% ../../nbs/pyrnet/reports.ipynb 12
 def parse_legacy_logbook(fn):
     df = None
     lb = read_logbook(fn)
@@ -192,7 +192,7 @@ def parse_legacy_logbook(fn):
     df = df.fillna("None")
     return df
 
-# %% ../../nbs/pyrnet/reports.ipynb 17
+# %% ../../nbs/pyrnet/reports.ipynb 16
 _pollution_marks = {
     "None":4,
     "AO01":0,
@@ -223,6 +223,7 @@ _mark_keys = {
 def parse_report(
         df:  pd.DataFrame,
         date_of_maintenance: float | dt.datetime | np.datetime64 | None,
+        stations: list | int | None = None
 ) -> dict:
     """
     Use pandas.read_csv (sep=;) to parse the survey report.
@@ -235,6 +236,9 @@ def parse_report(
         A rough date of maintenance (at least day resolution).
         If float, interpreted as Julian day from 2000-01-01T12:00.
         If None, the most recent logbook entries will be parsed.
+    stations: list, int or None
+        Selection of station (box) numbers to parse the report for.
+        If None, parse all available stations. The default is None.
 
     Returns
     -------
@@ -244,20 +248,50 @@ def parse_report(
     if date_of_maintenance is not None:
         date_of_maintenance = utils.to_datetime64(date_of_maintenance)
 
+    # Dataframe polishing
+    # drop only where station info is None
+    df = df.fillna("None")
+    df = df.mask(df["Q00"].eq("None")).dropna()
+    df = df.reset_index()
+    
+    # Iterable station selection
+    if stations is None:
+        stations = np.unique(df['Q00'].values)
+    if isinstance(stations, str):
+        stations = [int(stations)]
+    try:
+        iter(stations)
+    except:
+        stations = [stations]
+    
+    # Find reports to consider per station
+    idxs = []
+    for station in stations:
+        dfq = df.query(f"Q00=={station}")
+        # find next report within -1 to 10 days
+        report_dates = dfq["datestamp"].values.astype("datetime64")
+        dtime = report_dates - date_of_maintenance
+        mask = dtime < np.timedelta64(10,'D')
+        mask *= dtime > np.timedelta64(-1,'h')
+        if np.all(~mask): # no reports within time interval
+            continue
+        idx = np.argwhere(mask).ravel()[0]
+        next_report_date = report_dates[idx]
+        
+        # find reports around 2 days of next report for merging
+        dtime = report_dates - next_report_date
+        mask = dtime < np.timedelta64(2,'D')
+        mask *= dtime >= np.timedelta64(0,'D') # include "next_report_date"
+        idx = np.argwhere(mask).ravel()
+        idxs += list(dfq.index[idx])
+
     results = {}
-    for i in range(df.shape[0]):
+    for i in idxs:
+        if df["Q00"].values[i] == "None":
+            continue
         box = int(df["Q00"].values[i])
         key = f"{box:03d}"
-
-        # consider only reports -1 to +7 days around date of maintenance
         mdate = pd.to_datetime(df['datestamp'][i])
-        if date_of_maintenance is None:
-            dtime = mdate - np.max(df['datestamp'])
-        else:
-            dtime = mdate - date_of_maintenance
-
-        if (dtime<np.timedelta64(-1,'D')) or (dtime>np.timedelta64(7,'D')):
-            continue
 
         # store report in dictionary
         if key not in results:
@@ -271,8 +305,10 @@ def parse_report(
         # merge notes if multiple reports exist
         for nkey in _note_keys:
             new_note = df[_note_keys[nkey]].values[i]
-            update_note = (results[key][nkey]+'; '+new_note).strip('; ')
-            results = assoc_in(results, [key,nkey], update_note)
+            if new_note=="None":
+                continue
+            # update_note = (results[key][nkey]+'; '+new_note).strip('; ')
+            results = assoc_in(results, [key,nkey], new_note) # update_note)
 
         # update marks with most recent report if not None
         for mkey in _mark_keys:
@@ -284,10 +320,12 @@ def parse_report(
             else:
                 new_mark = _alignment_marks[new_mark]
             results = assoc_in(results, [key,mkey], new_mark)
+            # update associated maintenance date
+            results = assoc_in(results, [key,"maintenancetime"], mdate)
+        
     return results
 
-
-# %% ../../nbs/pyrnet/reports.ipynb 21
+# %% ../../nbs/pyrnet/reports.ipynb 20
 def get_qcflag(qc_clean, qc_level):
     """
     Aggregate quality flags.
