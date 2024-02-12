@@ -132,7 +132,7 @@ def resample(ds, freq, methods='mean', kwargs={}):
     dsouts = []
     for method in methods:
         # what we want (quickly), but in Pandas form
-        df_h = dsr.apply(method)
+        df_h = dsr.apply(method)#, kwargs=dict(numeric_only=True) )
         # rebuild xarray dataset with attributes
         vals = []
         for c in df_h.columns:
@@ -388,8 +388,11 @@ def to_l1a(
         report = {}
     if isinstance(report, pd.DataFrame):
         logger.info(f"Parsing report at date {rec_gprmc.time[-1]}")
-        report = pyrnet.reports.parse_report(report,
-                                date_of_maintenance=rec_gprmc.time[-1])
+        report = pyrnet.reports.parse_report(
+            report,
+            date_of_maintenance=rec_gprmc.time[-1],
+            stations=station
+        )
 
     if key not in report:
         logger.warning(f"No report for station {station} available.")
