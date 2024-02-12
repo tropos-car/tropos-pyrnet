@@ -132,7 +132,7 @@ def resample(ds, freq, methods='mean', kwargs={}):
     dsouts = []
     for method in methods:
         # what we want (quickly), but in Pandas form
-        df_h = dsr.apply(method)
+        df_h = dsr.apply(method)#, kwargs=dict(numeric_only=True) )
         # rebuild xarray dataset with attributes
         vals = []
         for c in df_h.columns:
@@ -278,6 +278,10 @@ def add_encoding(ds, vencode=None):
             **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.gpstime.data[0], unit='D')}T00:00Z",
         })
+        ds["maintenancetime"].encoding.update({
+            **vencode["time"],
+            "units": f"seconds since {np.datetime_as_string(ds.maintenancetime.data[0], unit='D')}T00:00Z",
+        })
         ds["adctime"].encoding.update({
             **vencode["adctime"],
             "units": "milliseconds"
@@ -289,6 +293,10 @@ def add_encoding(ds, vencode=None):
         ds["time"].encoding.update({
             **vencode["time"],
             "units": f"seconds since {np.datetime_as_string(ds.time.data[0], unit='D')}T00:00Z",
+        })
+        ds["maintenancetime"].encoding.update({
+            **vencode["time"],
+            "units": f"seconds since {np.datetime_as_string(ds.maintenancetime.data[0], unit='D')}T00:00Z",
         })
     else:
         raise ValueError("Dataset has no 'processing_level' attribute.")
@@ -380,8 +388,11 @@ def to_l1a(
         report = {}
     if isinstance(report, pd.DataFrame):
         logger.info(f"Parsing report at date {rec_gprmc.time[-1]}")
-        report = pyrnet.reports.parse_report(report,
-                                date_of_maintenance=rec_gprmc.time[-1])
+        report = pyrnet.reports.parse_report(
+            report,
+            date_of_maintenance=rec_gprmc.time[-1],
+            stations=station
+        )
 
     if key not in report:
         logger.warning(f"No report for station {station} available.")
@@ -390,6 +401,7 @@ def to_l1a(
         qc_extra = pyrnet.reports.get_qcflag(4,3)
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], "No maintenance report!")
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], "No maintenance report!")
+        maintenancetime = np.array([rec_gprmc.time.astype('datetime64[ns]')[-1]])
     else:
         qc_main = pyrnet.reports.get_qcflag(
             qc_clean=report[key]['clean'],
@@ -399,6 +411,7 @@ def to_l1a(
             qc_clean=report[key]['clean2'],
             qc_level=report[key]['align2']
         )
+        maintenancetime = np.array([pyrnet.utils.to_datetime64(report[key]["maintenancetime"])]) 
         # add qc notes
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], report[key]["note_general"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], report[key]["note_general"])
@@ -406,6 +419,8 @@ def to_l1a(
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_clean"], report[key]["note_clean2"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_level"], report[key]["note_align"])
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], report[key]["note_align2"])
+    qc_main = np.ubyte(qc_main)
+    qc_extra = np.ubyte(qc_extra)
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -456,14 +471,15 @@ def to_l1a(
             "battery_voltage": (("adctime","station"), values["battery_voltage"]), # [V]
             "lat": (("gpstime","station"), rec_gprmc.lat[:,None]), # [degN]
             "lon": (("gpstime","station"), rec_gprmc.lon[:,None]), # [degE]
-            "maintenance_flag_ghi": ("station", [qc_main]),
-            "maintenance_flag_gti": ("station", [qc_extra]),
+            "maintenance_flag_ghi": (("maintenancetime","station"), [[qc_main]]),
+            "maintenance_flag_gti": (("maintenancetime","station"), [[qc_extra]]),
             "iadc": (("gpstime", "station"), rec_gprmc.iadc[:,None])
         },
         coords={
             "adctime": ("adctime", adctime.astype('timedelta64[ns]')),
             "gpstime": ("gpstime", rec_gprmc.time.astype('datetime64[ns]')),
-            "station": ("station", [station]),
+            "maintenancetime": ("maintenancetime", maintenancetime),
+            "station": ("station", [np.ubyte(station)]),
         },
         attrs=gattrs
     )
@@ -485,7 +501,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 59
+# %% ../../nbs/pyrnet/data.ipynb 58
 def to_l1b(
         fname: str,
         *,
