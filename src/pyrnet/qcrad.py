@@ -67,7 +67,8 @@ def init_qc_flag(ds, var):
     ds[f"qc_flag_{var}"].attrs.update(attrs)
     ds[f"qc_flag_{var}"].encoding.update({
         "dtype": "u1",
-        "_FillValue": 0
+        "_FillValue": 255,
+        "zlib": True
     })
     return ds
 
@@ -110,6 +111,9 @@ def add_qc_flags(ds, vars):
     xr.Dataset
         The input dataset, but with additional 'qc_flag_<fluxvar>' variables.
     """
+    # keep only available variables
+    vars = [ var for var in vars if var in ds ]
+    
     # init qc flags
     for var in vars:
         ds = init_qc_flag(ds, var) 
