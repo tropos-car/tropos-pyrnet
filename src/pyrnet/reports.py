@@ -244,20 +244,25 @@ def parse_report(
     if date_of_maintenance is not None:
         date_of_maintenance = utils.to_datetime64(date_of_maintenance)
 
+    # find next report within -1 to 10 days
+    report_dates = df["datestamp"].values.astype("datetime64")
+    dtime = report_dates - date_of_maintenance
+    mask = dtime < np.timedelta64(10,'D')
+    mask *= dtime > np.timedelta64(-1,'h')
+    idx = np.argwhere(mask).ravel()[0]
+    next_report_date = report_dates[idx]
+    
+    # find reports around 2 days of next report for merging
+    dtime = report_dates - next_report_date
+    mask = dtime < np.timedelta64(2,'D')
+    mask *= dtime >= np.timedelta64(0,'D') # include "next_report_date"
+    idx = np.argwhere(mask).ravel()
+
     results = {}
-    for i in range(df.shape[0]):
+    for i in idx:
         box = int(df["Q00"].values[i])
         key = f"{box:03d}"
-
-        # consider only reports -1 to +7 days around date of maintenance
         mdate = pd.to_datetime(df['datestamp'][i])
-        if date_of_maintenance is None:
-            dtime = mdate - np.max(df['datestamp'])
-        else:
-            dtime = mdate - date_of_maintenance
-
-        if (dtime<np.timedelta64(-1,'D')) or (dtime>np.timedelta64(10,'D')):
-            continue
 
         # store report in dictionary
         if key not in results:
