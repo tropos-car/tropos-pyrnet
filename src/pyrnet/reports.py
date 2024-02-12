@@ -223,6 +223,7 @@ _mark_keys = {
 def parse_report(
         df:  pd.DataFrame,
         date_of_maintenance: float | dt.datetime | np.datetime64 | None,
+        stations: list | int | None = None
 ) -> dict:
     """
     Use pandas.read_csv (sep=;) to parse the survey report.
@@ -235,6 +236,9 @@ def parse_report(
         A rough date of maintenance (at least day resolution).
         If float, interpreted as Julian day from 2000-01-01T12:00.
         If None, the most recent logbook entries will be parsed.
+    stations: list, int or None
+        Selection of station (box) numbers to parse the report for.
+        If None, parse all available stations. The default is None.
 
     Returns
     -------
@@ -244,22 +248,47 @@ def parse_report(
     if date_of_maintenance is not None:
         date_of_maintenance = utils.to_datetime64(date_of_maintenance)
 
-    # find next report within -1 to 10 days
-    report_dates = df["datestamp"].values.astype("datetime64")
-    dtime = report_dates - date_of_maintenance
-    mask = dtime < np.timedelta64(10,'D')
-    mask *= dtime > np.timedelta64(-1,'h')
-    idx = np.argwhere(mask).ravel()[0]
-    next_report_date = report_dates[idx]
+    # Dataframe polishing
+    # drop only where station info is None
+    df = df.fillna("None")
+    df = df.mask(df["Q00"].eq("None")).dropna()
+    df = df.reset_index()
     
-    # find reports around 2 days of next report for merging
-    dtime = report_dates - next_report_date
-    mask = dtime < np.timedelta64(2,'D')
-    mask *= dtime >= np.timedelta64(0,'D') # include "next_report_date"
-    idx = np.argwhere(mask).ravel()
+    # Iterable station selection
+    if stations is None:
+        stations = np.unique(df['Q00'].values)
+    if isinstance(stations, str):
+        stations = [int(stations)]
+    try:
+        iter(stations)
+    except:
+        stations = [stations]
+    
+    # Find reports to consider per station
+    idxs = []
+    for station in stations:
+        dfq = df.query(f"Q00=={station}")
+        # find next report within -1 to 10 days
+        report_dates = dfq["datestamp"].values.astype("datetime64")
+        dtime = report_dates - date_of_maintenance
+        mask = dtime < np.timedelta64(10,'D')
+        mask *= dtime > np.timedelta64(-1,'h')
+        if np.all(~mask): # no reports within time interval
+            continue
+        idx = np.argwhere(mask).ravel()[0]
+        next_report_date = report_dates[idx]
+        
+        # find reports around 2 days of next report for merging
+        dtime = report_dates - next_report_date
+        mask = dtime < np.timedelta64(2,'D')
+        mask *= dtime >= np.timedelta64(0,'D') # include "next_report_date"
+        idx = np.argwhere(mask).ravel()
+        idxs += list(dfq.index[idx])
 
     results = {}
-    for i in idx:
+    for i in idxs:
+        if df["Q00"].values[i] == "None":
+            continue
         box = int(df["Q00"].values[i])
         key = f"{box:03d}"
         mdate = pd.to_datetime(df['datestamp'][i])
