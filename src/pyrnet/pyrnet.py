@@ -416,14 +416,16 @@ def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
 
     map = get_pyrnet_mapping(mapfile,date)
     calib = read_calibration(cfile,date)
+    
+    CC = calib["CC"] if "CC" in calib else [1]
 
     if serial is None and box is not None:
         box=int(box)
-        return f"{box:03d}", map[f"{box:03d}"], calib[f"{box:03d}"]
+        return f"{box:03d}", map[f"{box:03d}"], calib[f"{box:03d}"], CC
     elif serial is not None and box is None:
         res = valfilter(lambda x: serial in x, map)
         box = list(res.keys())[0]
         serial = res[box]
-        return box,serial,calib[box]
+        return box,serial,calib[box], CC
     else:
         raise ValueError("At least one of [station,box] have to be specified.")
