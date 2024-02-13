@@ -24,6 +24,7 @@ To verify comparability of the individual irradiance observations of each statio
    :caption: Calibrations:
 
    calibration/calibration_s2vsr.ipynb
+   calibration/cos_corr_s2vsr.ipynb
    calibration/calibration_metpvnet.md
 
 Code Documentation
