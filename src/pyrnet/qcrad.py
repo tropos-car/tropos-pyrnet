@@ -72,28 +72,7 @@ def init_qc_flag(ds, var):
     })
     return ds
 
-# %% ../../nbs/pyrnet/qcrad.ipynb 12
-def _make_iter(x):
-    try:
-        iter(x)
-    except:
-        x = [x]
-    return np.array(x)
-
-def _check_tilted(x):
-    is_tilted = np.full(x.shape[1], False)
-    # check if this is a tilted irradiance measurement
-    if "vangle" in x.attrs:
-        vangle = _make_iter(x.attrs["vangle"])
-        hangle = _make_iter(x.attrs["hangle"])
-        try:
-            assert len(vangle)==len(is_tilted)
-        except:
-            raise Exception(f"Attribute vangle and hangle of {var} should have the same length as the station dimension.")
-        is_tilted = np.abs(vangle)>0.1
-    return is_tilted
-
-# %% ../../nbs/pyrnet/qcrad.ipynb 20
+# %% ../../nbs/pyrnet/qcrad.ipynb 18
 def add_qc_flags(ds, vars):
     """
     Add quality flags to flux variables in the dataset.
@@ -131,13 +110,13 @@ def add_qc_flags(ds, vars):
     
     # do physical and extreme limit tests
     for var in vars:
-        is_tilted = _check_tilted(ds[var])
+        is_tilted = pyrnet.utils.check_tilted(ds[var])
         values = ds[var].values.copy()
         
         # apply correction if possible
         if np.any(is_tilted):
-            vangle = _make_iter(ds[var].attrs["vangle"])
-            hangle = _make_iter(ds[var].attrs["hangle"])
+            vangle = pyrnet.utils.make_iter(ds[var].attrs["vangle"])
+            hangle = pyrnet.utils.make_iter(ds[var].attrs["hangle"])
             cfac = pyrnet.utils.tilt_correction_factor(
                 dp = vangle,
                 dy = hangle,
@@ -174,7 +153,7 @@ def add_qc_flags(ds, vars):
     thres_low[ds.szen.mean("station")>75] = 1.15
     all_values_mean = np.nanmean(np.concatenate([dsr[var].values for var in dsr],axis=1),axis=1)
     for var in vars:
-        is_tilted = _check_tilted(ds[var])
+        is_tilted = pyrnet.utils.check_tilted(ds[var])
         ratio = np.ones(dsr[var].shape)
         if np.any(is_tilted):
             meanvalues =  all_values_mean
