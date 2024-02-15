@@ -516,14 +516,16 @@ def to_l1b(
     if global_attrs is not None:
         gattrs.update(global_attrs)
 
-    # 1. Load l1a data
+    ######################################################################################
+    ## Load l1a data
     ds_l1a = xr.open_dataset(fname)
     # check correct file
     if ds_l1a.processing_level != "l1a":
         logger.warning(f"{fname} is not a l1a file. Skip.")
         return None
 
-    # 2. Sync GPS to ADC time
+    ######################################################################################
+    ## Sync GPS to ADC time
     adctime = pyrnet.logger.sync_adc_time(
         adctime = ds_l1a.adctime.values,
         gpstime = ds_l1a.gpstime.values,
@@ -535,7 +537,8 @@ def to_l1b(
         logger.warning(f"Could not fit GPS to ADC time for file {fname}. Skip.")
         return None
 
-    # 3. Create new dataset (l1b)
+    ######################################################################################
+    ## Create new dataset (l1b)
     ds_l1b = ds_l1a.drop_dims('gpstime')
     ds_l1b = ds_l1b.drop_vars(['maintenance_flag_ghi','maintenance_flag_gti']) # keep only time dependent variables
     ds_l1b = ds_l1b.assign({'time': ('adctime', adctime)})
@@ -548,7 +551,8 @@ def to_l1b(
     })
     logger.info(f"Dataset time coverage before strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
-    # 4. Drop first and last <stripminutes> minutes of data to avoid bad data due to maintenance
+    ######################################################################################
+    ## Drop first and last <stripminutes> minutes of data to avoid bad data due to maintenance
     stripminutes = np.timedelta64(int(config['stripminutes']), 'm')
     if (ds_l1b.time.values[0] + 3*stripminutes) > ds_l1b.time.values[-1]:
         logger.warning(f"{fname} has not enough data. Skip.")
@@ -563,35 +567,8 @@ def to_l1b(
 
     logger.info(f"Dataset time coverage after strip: {ds_l1b.time.values[0]} - {ds_l1b.time.values[-1]}")
 
-    # 5. rad flux calibration
-    box = ds_l1b.station.values[0]
-    boxnumber, serial, cfac = pyrnet.pyrnet.meta_lookup(
-        ds_l1b.time.values[0],
-        box=box,
-        cfile=config['file_calibration'],
-        mapfile=config['file_mapping'],
-    )
-    logger.info(f"Meta Lookup:")
-    logger.info(f">> Box={box}")
-    logger.info(f">> serial(s)={serial}")
-    logger.info(f">> calibration factor(s)={cfac}")
-
-
-    # calibrate radflux variables
-    for i, radflx in enumerate(config['radflux_varname']):
-        if cfac[i] is None:
-            # drop if calibration/instrument don't exist (probably secondary pyranometer).
-            ds_l1b = ds_l1b.drop_vars([var for var in ds_l1b if radflx in var])
-            continue
-        ds_l1b[radflx].values = ds_l1b[radflx].values*1e6/(cfac[i]) # V -> W m-2
-        ds_l1b[radflx].attrs.update({
-            "serial": serial[i],
-            "calibration_factor": cfac[i],
-            "calibration_function": "flux (W m-2) = flux (V) * calibration_factor (W m-2 V-1)",
-        })
-
-
-    # 6. resample to desired resolution
+    #####################################################################################
+    ## resample to desired resolution
     # save station coordinate
     station_dim = {"station": ds_l1b["station"].values}
     
@@ -618,7 +595,8 @@ def to_l1b(
     # add station dimension back again
     ds_l1b = ds_l1b.expand_dims(station_dim, axis=-1)
 
-    # 7. Interpolate GPS coordinates to l1b time
+    ######################################################################################
+    ## Interpolate GPS coordinates to l1b time
     ds_gps = ds_l1a.drop_dims("adctime")
     ds_gps = ds_gps.drop_vars(['iadc'])
 
@@ -631,7 +609,8 @@ def to_l1b(
 
     ds_l1b = xr.merge((ds_l1b,ds_gps))
 
-    # 8. Calc and add sun position
+    ######################################################################################
+    ## Calc and add sun position
     szen, sazi = sp.sun_angles(
         time=ds_l1b.time.values[:,None], # line up with coordinates to keep dependence on time only
         lat=ds_l1b.lat.values,
@@ -652,11 +631,76 @@ def to_l1b(
     # update attributes and encoding
     for key in ['szen', 'sazi','esd']:
         ds_l1b[key].attrs.update(vattrs[key])
+
+    ######################################################################################
+    ## rad flux calibration
+    box = ds_l1b.station.values[0]
+    boxnumber, serial, cfac, CCcoef = pyrnet.pyrnet.meta_lookup(
+        ds_l1b.time.values[0],
+        box=box,
+        cfile=config['file_calibration'],
+        mapfile=config['file_mapping'],
+    )
+    logger.info(f"Meta Lookup:")
+    logger.info(f">> Box={box}")
+    logger.info(f">> serial(s)={serial}")
+    logger.info(f">> calibration factor(s)={cfac}")
+
+    mu0 = np.cos(np.deg2rad(ds_l1b.szen.values))
+    
+    # calibrate radiation flux with gain=300
+    for i, radflx in enumerate(config['radflux_varname']):
+        # all radflux related variables (including <radflux>_<resamplemethod> variables)
+        radflx_vars = [var for var in ds_l1b if var.startswith(radflx)]
+        if cfac[i] is None:
+            # drop if calibration/instrument don't exist (probably secondary pyranometer).
+            ds_l1b = ds_l1b.drop_vars(radflx_vars)
+            continue
         
-    # 9. add quality flags
+        # calc apparent zenith angle if possible
+        mua = mu0.copy()
+        if "vangle" in ds[radflx].attrs:
+            vangle = pyrnet.utils.make_iter(ds[radflx].attrs["vangle"])
+            hangle = pyrnet.utils.make_iter(ds[radflx].attrs["hangle"])
+            mua = pyrnet.utils.calc_apparent_coszen(
+                pitch=vangle,
+                yaw=hangle,
+                zen=ds_l1b.szen.values,
+                azi=ds_l1b.sazi.values
+            )
+        
+        mask_mua = ~np.isnan(mua)
+        Ca = 1e6/cfac[i]
+        Cc = np.polynomial.polynomial.polyval(mua, c=CCcoef)
+        Cmu = mu0/mua
+        # apply to all variables
+        for var in radflx_vars:
+            calib_func = "flux (W m-2) = flux (V) * Cabsolute (W m-2 V-1)"
+            C = np.ones(mu0.shape)*Ca
+            if radflx == "gti":
+                C[mask_mua] *= Cc[mask_mua]
+                calib_func += "" if np.all(np.isnan(mua)) else " * Ccoscorr(mua)"
+            else:
+                C[mask_mua] *= Cc[mask_mua] * Cmu[mask_mua]
+                calib_func += " * Ccoscorr(mua) + mu0/mua"
+            ds_l1b[var].values = ds_l1b[var].values*C
+    
+            ds_l1b[var].attrs['units'] = "W m-2",
+            ds_l1b[var].attrs.update({
+                "units": "W m-2",
+                "serial": serial[i],
+                "calibration_Cabsolute": Ca,
+                "calibration_Ccoscorr": str(np.polynomial.polynomial.Polynomial(CCcoef)),
+                "calibration_function": calib_func
+            })
+
+    ######################################################################################  
+    ## add quality flags
     ds_l1b = pyrnet.qcrad.add_qc_flags(ds_l1b, config["radflux_varname"])
 
-    # add global coverage attributes
+    ######################################################################################
+    ## Update variables, global attributes and encoding
+    #add global coverage attributes
     ds_l1b = update_coverage_meta(ds_l1b, timevar="time")
     ds_l1b.attrs["processing_level"] = 'l1b'
     now = pd.to_datetime(np.datetime64("now"))
