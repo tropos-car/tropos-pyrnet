@@ -1,20 +1,21 @@
 {
   "attributes": {
-        "Title"           : "TROPOS pyranometer network (PyrNet) observations",
-        "Institution"     : "Leibniz Institute for Tropospheric Research (TROPOS)",
+        "Conventions"     : "CF-1.10, ACDD-1.3",
+        "title"           : "TROPOS pyranometer network (PyrNet) observational data set",
+        "history"         : "",
+        "institution"     : "Leibniz Institute for Tropospheric Research (TROPOS)",
+        "source"          : "TROPOS pyranometer network (PyrNet)",
+        "references"      : "https://doi.org/10.5194/amt-9-1153-2016",
         "Department"      : "Remote Sensing of Atmospheric Processes",
         "Department_team" : "Clouds, Aerosol and Radiation",
         "Address"         : "Permoser Str. 15, 04318 Leipzig, Germany",
-        "Source"          : "TROPOS pyranometer network (PyrNet)",
         "Contact_person"  : "Andreas Macke and the clouds, aerosol and radiation team of the remote sensing department, mailto:andreas.macke@tropos.de",
         "Contributor_name": "{contributor_name}",
         "Contributor_role": "{contributor_role}",
         "Authors_software": "Hartwig Deneke, Jonas Witthuhn, mailto:deneke@tropos.de",
         "Creator_name"    : "{creator_name}",
         "Project"         : "{project}",
-        "References"      : "https://doi.org/10.5194/amt-9-1153-2016",
         "Standard_name_vocabulary" : "CF Standard Name Table v81",
-        "Conventions"     : "CF-1.10, ACDD-1.3",
         "License"         : "CC-BY-SA 3.0"
   },
   "variables": {
