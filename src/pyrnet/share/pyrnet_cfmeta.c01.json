@@ -204,32 +204,22 @@
       }
     },
     "lat": {
-      "type": "u4",
+      "type": "f8",
       "attributes": {
         "standard_name": "latitude",
         "units": "degree_north",
-        "scale_factor": 1e-6,
-        "add_offset": -90,
-        "valid_range": [
-          0,
-          180000000
-        ],
-        "_FillValue": 4294967295,
+        "valid_range": [-90.0, 90.0],
+        "_FillValue": -9999.0,
         "zlib": true
       }
     },
     "lon": {
-      "type": "u4",
+      "type": "f8",
       "attributes": {
         "standard_name": "longitude",
         "units": "degree_east",
-        "scale_factor": 1e-6,
-        "add_offset": -180,
-        "valid_range": [
-          0,
-          360000000
-        ],
-        "_FillValue": 4294967295,
+        "valid_range": [-180.0,180.0],
+        "_FillValue": -99999.0,
         "zlib": true
       }
     },
