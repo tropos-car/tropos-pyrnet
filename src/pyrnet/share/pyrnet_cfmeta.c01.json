@@ -137,18 +137,11 @@
       }
     },
     "esd": {
-      "type": "u2",
+      "type": "f8",
       "attributes": {
-        "standard_name": "earth_sun_distance",
-        "units": "AU",
-        "scale_factor": 1e-6,
-        "add_offset": 0.98,
-        "valid_range": [
-          0,
-          40000
-        ],
-        "_FillValue": 65535,
-        "zlib": true
+        "long_name": "Earth-sun distance",
+        "note": "Calculated based on Spencer (1971), as mean of its values over all time steps.",
+        "units": "ua"
       }
     },
     "maintenance_flag_ghi": {
