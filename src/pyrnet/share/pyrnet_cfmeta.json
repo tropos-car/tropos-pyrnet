@@ -1,6 +1,6 @@
 {
   "attributes": {
-        "Conventions"     : "CF-1.10, ACDD-1.3",
+        "Conventions"    : "CF-1.10, ACDD-1.3",
         "title"           : "TROPOS pyranometer network (PyrNet) observational data set",
         "history"         : "",
         "institution"     : "Leibniz Institute for Tropospheric Research (TROPOS)",
