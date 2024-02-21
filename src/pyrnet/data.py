@@ -15,6 +15,7 @@ import pkg_resources as pkg_res
 import warnings
 
 from trosat import sunpos as sp
+from trosat.cfconv import read_cfjson
 
 import pyrnet
 pyrnet_version = pyrnet.__version__
@@ -187,7 +188,7 @@ def get_cfmeta(config: dict|None = None) -> dict:
     """
     config= get_config(config)
     # parse the json file
-    cfdict = pyrnet.utils.read_json(config["file_cfmeta"])
+    cfdict = read_cfjson(config["file_cfmeta"])
     # get global attributes:
     gattrs = cfdict['attributes']
     # apply config
@@ -196,12 +197,12 @@ def get_cfmeta(config: dict|None = None) -> dict:
     d = pyrnet.utils.get_var_attrs(cfdict)
     # split encoding attributes
     vattrs, vencode = pyrnet.utils.get_attrs_enc(d)
-    return gattrs ,vattrs, vencode
+    return gattrs, vattrs, vencode
 
 def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
     ADCfac = ADCV / (2**ADCbits-1) # Last bit is reserved 
-    sencoding ={}
-    for k,v in sconfig.items():
+    sencoding = {}
+    for k, v in sconfig.items():
         sencoding.update(
             {k: dict(
                 units=v['units'],
@@ -501,7 +502,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 58
+# %% ../../nbs/pyrnet/data.ipynb 55
 def to_l1b(
         fname: str,
         *,
