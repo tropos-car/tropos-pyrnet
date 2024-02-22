@@ -660,9 +660,9 @@ def to_l1b(
         
         # calc apparent zenith angle if possible
         mua = mu0.copy()
-        if "vangle" in ds[radflx].attrs:
-            vangle = pyrnet.utils.make_iter(ds[radflx].attrs["vangle"])
-            hangle = pyrnet.utils.make_iter(ds[radflx].attrs["hangle"])
+        if "vangle" in ds_l1b[radflx].attrs:
+            vangle = pyrnet.utils.make_iter(ds_l1b[radflx].attrs["vangle"])
+            hangle = pyrnet.utils.make_iter(ds_l1b[radflx].attrs["hangle"])
             mua = pyrnet.utils.calc_apparent_coszen(
                 pitch=vangle,
                 yaw=hangle,
