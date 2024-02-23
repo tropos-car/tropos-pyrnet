@@ -93,21 +93,12 @@ def process_l1a(input_files,
                 logging.warning(f"Skip {filename}.")
                 continue
 
-            outfile = os.path.join(output_path, cfg['output_l1a'])
-            outfile = outfile.format_map(
-                dict(
-                    startdt=pd.to_datetime(ds.gpstime.values[0]),
-                    enddt=pd.to_datetime(ds.gpstime.values[-1]),
-                    campaign=cfg['campaign'],
-                    station=stationid,
-                    collection=cfg['collection'],
-                    sfx="nc"
-                )
+            outfile = os.path.join(
+                output_path,
+                pyrdata.get_fname(ds, freq="10Hz", timevar="gpstime", sfx="nc", config=cfg)
             )
-            # if os.path.exists(outfile):
-                # logger.info(f"{outfile} already exists, write to ")
+
             pyrdata.to_netcdf(ds, outfile, timevar="gpstime")
-            # ds.to_netcdf(outfile, encoding={'gpstime':{'dtype':'float64'}})
             logging.info(f"l1a saved to {outfile}")
 
 
@@ -146,17 +137,13 @@ def process_l1b(input_files: list[str],
                 day = pd.to_datetime(day)
                 logging.info(f"process day {day:%Y-%m-%d}")
                 dsd = ds.sel(time=f"{day:%Y-%m-%d}")
-                outfile = os.path.join(output_path, cfg['output_l1b'])
-                outfile = outfile.format_map(
-                    dict(
-                        dt=day,
-                        campaign=cfg['campaign'],
-                        station=box,
-                        collection=int(cfg['collection']),
-                        sfx="nc"
-                    )
+
+                outfile = os.path.join(
+                    output_path,
+                    pyrdata.get_fname(dsd, freq=cfg["l1bfreq"], timevar="time", sfx="nc", config=cfg)
                 )
-                pyrdata.to_netcdf(dsd,outfile)
+
+                pyrdata.to_netcdf(dsd, outfile)
                 logging.info(f"l1b saved to {outfile}")
 
 cli.add_command(process)
