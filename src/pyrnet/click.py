@@ -143,7 +143,7 @@ def process_l1b(input_files: list[str],
                     pyrdata.get_fname(dsd, freq=cfg["l1bfreq"], timevar="time", sfx="nc", config=cfg)
                 )
 
-                pyrdata.to_netcdf(dsd, outfile)
+                pyrdata.to_netcdf_l1b(dsd, outfile, freq=cfg["l1bfreq"])
                 logging.info(f"l1b saved to {outfile}")
 
 cli.add_command(process)
