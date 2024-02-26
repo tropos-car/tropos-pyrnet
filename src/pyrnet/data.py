@@ -788,6 +788,8 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
             for j,attr in enumerate(merge_attrs):
                 if "note" in attr and not ghi_var.startswith("maintenance"):
                     continue
+                if "note" not in attr and ghi_var.startswith("maintenance"):
+                    continue
                 fill_value = dst.station.size * [merge_attrs_fill_value[j]]
                 dst[gti_var].attrs.update({
                     attr: fill_value
@@ -812,6 +814,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
                 if attr in merged_attrs[var]:
                     mattrval = merged_attrs[var][attr] + attrval
                     mattridx = mattrs_idx[var][attr] + attridx
+                    print(i,var,attr,mattrval)
                     _,idx = np.unique(mattridx, return_index=True)
                     attridx = [mattridx[i] for i in idx]
                     attrval = [mattrval[i] for i in idx]
