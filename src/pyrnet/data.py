@@ -1032,6 +1032,8 @@ def merge_l1b(
     # if its in time range, scan for gaps >10min and snap closest maintenance time to this gaps
     ds_merged = _maintenancetime_snap_to_gap(ds_merged)
     
+    # update automatic quality flags
+    ds_merged = pyrnet.qcrad.add_qc_flags(ds_merged, ["ghi","gti"])
     # add encoding
     ds_merged = add_encoding(ds_merged)
     return ds_merged
