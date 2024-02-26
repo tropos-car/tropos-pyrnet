@@ -145,60 +145,43 @@
         "units": "ua"
       }
     },
-    "maintenance_flag_ghi": {
+    "maintenance_flag": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",
-        "long_name": "Maintenance quality control flags for main pyranometer",
+        "long_name": "Maintenance quality control flags",
         "note": "Soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
         "valid_range": [
           0,
           11
         ],
         "flag_masks": [
-          3,
-          3,
-          3,
-          12,
-          12
+          3, 3, 3, 12, 12
         ],
         "flag_values": [
-          1,
-          2,
-          3,
-          4,
-          8
+          1, 2, 3, 4, 8
         ],
         "flag_meanings": "soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
         "_FillValue": 255,
         "zlib": true
       }
     },
-    "maintenance_flag_gti": {
+    "qc_flag": {
       "type": "u1",
       "attributes": {
         "standard_name": "quality_flag",
-        "long_name": "Maintenance quality control flags for secondary pyranometer",
-        "note": "Soiling describes subjectively the coverage of the pyranometer dome with dirt. The level flag is problematic if the bubble of the spirit level touches the reference ring, and bad if it is outside.",
+        "long_name": "Automatic quality checks.",
         "valid_range": [
           0,
-          11
+          127
         ],
         "flag_masks": [
-          3,
-          3,
-          3,
-          12,
-          12
+          1, 2, 4, 8, 16, 32, 64
         ],
         "flag_values": [
-          1,
-          2,
-          3,
-          4,
-          8
+          1, 2, 4, 8, 16, 32, 64
         ],
-        "flag_meanings": "soiling_light soiling_moderate soiling_heavy level_problematic level_bad",
+        "flag_meanings": "below_physical_limit above_physical_limit below_rare_limit above_rare_limit comparison_to_low comparison_to_high quality_control_failed",
         "_FillValue": 255,
         "zlib": true
       }

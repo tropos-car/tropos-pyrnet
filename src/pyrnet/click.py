@@ -8,6 +8,7 @@ import xarray as xr
 import logging
 from collections.abc import Iterable
 from toolz import merge_with, assoc_in
+import parse
 
 from . import pyrnet
 from . import data as pyrdata
@@ -140,15 +141,78 @@ def process_l1b(input_files: list[str],
 
                 outfile = os.path.join(
                     output_path,
-                    pyrdata.get_fname(dsd, freq=cfg["l1bfreq"], timevar="time", sfx="nc", config=cfg)
+                    pyrdata.get_fname(dsd, period="P1D", freq=cfg["l1bfreq"], timevar="time", sfx="nc", config=cfg)
                 )
 
-                pyrdata.to_netcdf_l1b(dsd, outfile, freq=cfg["l1bfreq"])
+                pyrdata.to_netcdf_l1b(dsd, fname=outfile, freq=cfg["l1bfreq"])
                 logging.info(f"l1b saved to {outfile}")
+
+@click.command("l1b_network")
+@click.argument("input_files", nargs=-1)
+@click.argument("output_path", nargs=1)
+@click.option("--config","-c",
+              nargs=1,
+              help="Specify config files with override the default config.")
+def process_l1b_network(input_files: list[str],
+                output_path: str,
+                config:str):
+
+    if config is not None:
+        config = pyrutils.read_json(config)
+    cfg = pyrdata.get_config(config)
+
+    # get unique station numbers
+    stations = []
+    for fn in input_files:
+        filename = os.path.basename(fn)
+        result = parse.parse(cfg["output"], filename).named
+        stations.append(result["station"])
+    Nstations = len(np.unique(stations))
+
+    with click.progressbar(input_files,label='Processing') as files:
+        for fn in files:
+            filepath = os.path.abspath(fn)
+            filename = os.path.basename(filepath)
+            logging.info(f"start l1a->l1b: {filename}")
+
+            ds = pyrdata.to_l1b(
+                filepath,
+                config=config,
+                global_attrs=cfg['global_attrs']
+            )
+            if ds is None:
+                logger.debug(f"{filename} is skipped.")
+                continue
+
+            udays = np.unique(ds.time.values.astype("datetime64[D]"))
+            for day in udays:
+                day = pd.to_datetime(day)
+                logging.info(f"process day {day:%Y-%m-%d}")
+                dsd = ds.sel(time=f"{day:%Y-%m-%d}")
+
+                outfile = os.path.join(
+                    output_path,
+                    pyrdata.get_fname(
+                        dsd,
+                        period="P1D",
+                        kind='n',
+                        station=Nstations,
+                        freq=cfg["l1bfreq"],
+                        timevar="time",
+                        sfx="nc",
+                        config=cfg
+                    )
+                )
+
+
+                pyrdata.to_netcdf_l1b(dsd, fname=outfile, freq=cfg["l1bfreq"])
+                logging.info(f"l1b_network saved to {outfile}")
+
 
 cli.add_command(process)
 process.add_command(process_l1a)
 process.add_command(process_l1b)
+process.add_command(process_l1b_network)
 
 @click.command("merge")
 @click.argument("input_files", nargs=-1)

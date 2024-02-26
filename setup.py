@@ -32,7 +32,7 @@ setup(
         "addict",
         "openpyxl",
         "xlrd",
-        "parse",
+        "parse>=1.20",
         "limepy",
         "trosat-base @ git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base",
     ],

@@ -36,18 +36,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # %% ../../nbs/pyrnet/data.ipynb 6
-def get_fname(ds, freq, timevar='time', sfx='nc', config=None):
+def get_fname(ds, freq, period=None, timevar='time', sfx='nc', kind=None, station=None, config=None):
     config = get_config(config)
-    duration = ds[timevar].values[-1] - ds[timevar].values[0]
-    if ds.station.size==1:
-        kind = 's'
-        station = ds.station.values[0]
-    else:
-        kind = 'n'
-        station = ds.station.size
+    if period is None:
+        period = ds[timevar].values[-1] - ds[timevar].values[0]
+        period = pd.to_timedelta(period).floor("s").isoformat()
+    if kind is None:
+        if ds.station.size==1:
+            kind = 's'
+            station = ds.station.values[0]
+        else:
+            kind = 'n'
+            station = ds.station.size
     format_dict = dict(
         dt = pd.to_datetime(ds[timevar].values[0]),
-        period = pd.to_timedelta(duration).isoformat(),
+        period = period,
         campaign = config["campaign"],
         kind = kind,
         station = int(station),
@@ -106,7 +109,7 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     return ds
 
 # %% ../../nbs/pyrnet/data.ipynb 12
-def to_netcdf(ds,fname, timevar="time"):
+def to_netcdf(ds, fname, timevar="time"):
     """xarray to netcdf, but merge if exist
     """
     # save to netCDF4
@@ -114,11 +117,14 @@ def to_netcdf(ds,fname, timevar="time"):
     ds.to_netcdf(fname,
                  encoding={timevar:{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 #|export
-def to_netcdf_l1b(ds, fname,freq='1s', timevar="time"):
+def to_netcdf_l1b(ds, fname, freq='1s', timevar="time"):
     """xarray to netcdf, but merge if exist
     """
     # merge if necessary
-    dslist = pyrnet.utils.make_iter(ds)
+    if isinstance(ds, xr.Dataset):
+        dslist = [ds]
+    else:
+        dslist = ds
     
     if os.path.exists(fname):
         ds1 = xr.load_dataset(fname)
@@ -143,7 +149,9 @@ def resample(ds, freq, methods='mean', kwargs={}):
     dsouts = []
     for method in methods:
         # what we want (quickly), but in Pandas form
-        df_h = dsr.apply(method)#, kwargs=dict(numeric_only=True) )
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=FutureWarning)
+            df_h = dsr.apply(method)
         # rebuild xarray dataset with attributes
         vals = []
         for c in df_h.columns:
@@ -273,8 +281,6 @@ def add_encoding(ds, vencode=None):
 
     # add encoding to Dataset
     for k, v in vencode.items():
-        if k not in ds:
-            continue
         for ki in [key for key in ds if key.startswith(k)]:
             ds[ki].encoding.update(v)
         if "valid_range" not in vencode[k]:
@@ -780,7 +786,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
                 gti_var: (dst[ghi_var].dims, np.full(dst[ghi_var].shape, np.nan))
             })
             for j,attr in enumerate(merge_attrs):
-                if "note" in attr:
+                if "note" in attr and not ghi_var.startswith("maintenance"):
                     continue
                 fill_value = dst.station.size * [merge_attrs_fill_value[j]]
                 dst[gti_var].attrs.update({
@@ -815,7 +821,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
                 merged_attrs = assoc_in(
                     merged_attrs, [var,attr], attrval
                 )
-    return merged_attrs
+    return dslist, merged_attrs
     
 
 # %% ../../nbs/pyrnet/data.ipynb 76
@@ -889,6 +895,8 @@ def _maintenancetime_snap_to_gap(ds):
         igap = np.argwhere(np.isnan(
             ds.ghi.isel(station=istation).values
         )).ravel()
+        if len(igap)==0:
+            continue
         digap = np.diff(igap)
         istartgaps = np.insert(digap,0,0)!=1
         iendgaps = np.insert(digap,-1,0)!=1
@@ -909,6 +917,7 @@ def _maintenancetime_snap_to_gap(ds):
     ds = ds.assign_coords({
         "maintenancetime": ("maintenancetime", new_mtimes)
     })
+    ds = ds.sortby("maintenancetime")
     return ds
 
 # %% ../../nbs/pyrnet/data.ipynb 80
@@ -935,7 +944,7 @@ def merge_l1b(
     # have to merge attributes before reindexing, 
     # as attributes are tied the specific stations in the current datasets
     merged_gattrs = _merge_gattrs_by_station(dslist, merge_gattrs=merge_gattrs)
-    merged_attrs = _merge_vattrs_by_station(dslist, merge_attrs=merge_attrs)
+    dslist, merged_attrs = _merge_vattrs_by_station(dslist, merge_attrs=merge_attrs)
     
     #####################################################################
     ## Unify datasets
@@ -960,6 +969,7 @@ def merge_l1b(
             # handle overlapping values by dropping from the first (override from second)
             for var in dst:
                 overlap = (~np.isnan(dst[var].values))*(~np.isnan(dst[var].values))
+                ds_time_station[var].values = ds_time_station[var].values.astype(float)
                 ds_time_station[var].values[overlap] = np.nan
             ds_time_station = ds_time_station.merge(dst)
             
@@ -974,6 +984,7 @@ def merge_l1b(
         else:
             for var in dst:
                 overlap = (~np.isnan(dst[var].values))*(~np.isnan(dst[var].values))
+                ds_mtime_station[var].values = ds_mtime_station[var].values.astype(float)
                 ds_mtime_station[var].values[overlap] = np.nan
             ds_mtime_station = ds_mtime_station.merge(dst)
     
