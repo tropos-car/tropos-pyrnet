@@ -301,6 +301,8 @@ def parse_report(
             # initialize notes
             for nkey in _note_keys:
                 results = assoc_in(results, [key,nkey], "")
+            # initialize maintenancetime
+            results = assoc_in(results, [key,"maintenancetime"], mdate)
 
         # merge notes if multiple reports exist
         for nkey in _note_keys:

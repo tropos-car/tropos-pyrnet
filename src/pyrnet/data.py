@@ -816,7 +816,6 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
                 if attr in merged_attrs[var]:
                     mattrval = merged_attrs[var][attr] + attrval
                     mattridx = mattrs_idx[var][attr] + attridx
-                    print(i,var,attr,mattrval)
                     _,idx = np.unique(mattridx, return_index=True)
                     attridx = [mattridx[i] for i in idx]
                     attrval = [mattrval[i] for i in idx]
