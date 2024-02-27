@@ -590,7 +590,8 @@ def to_l1b(
     ## resample to desired resolution
     # save station coordinate
     station_dim = {"station": ds_l1b["station"].values}
-    
+    station_attrs = ds_l1b["station"].attrs
+
     # resample on time dimension with specified methods
     methods = ['mean'] + config["l1b_resample_stats"]
     res = resample(
@@ -613,7 +614,8 @@ def to_l1b(
     
     # add station dimension back again
     ds_l1b = ds_l1b.expand_dims(station_dim, axis=-1)
-
+    ds_l1b["station"].attrs.update(station_attrs)
+    
     ######################################################################################
     ## Interpolate GPS coordinates to l1b time
     ds_gps = ds_l1a.drop_dims("adctime")
