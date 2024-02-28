@@ -129,11 +129,13 @@ def to_netcdf_l1b(ds, fname, freq='1s', timevar="time"):
     if os.path.exists(fname):
         ds1 = xr.load_dataset(fname)
         dslist.append(ds1)
-        os.remove(fname)
-
+        
     ds = merge_l1b(dslist, freq=freq, timevar=timevar)
     # save to netCDF4
     ds = update_coverage_meta(ds, timevar=timevar)
+    
+    if os.path.exists(fname): 
+        os.remove(fname)
     ds.to_netcdf(fname,
                  encoding={timevar:{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
@@ -420,6 +422,10 @@ def to_l1a(
         qc_extra = pyrnet.reports.get_qcflag(4,3)
         vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_general"], "No maintenance report!")
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_general"], "No maintenance report!")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_clean"], "")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_clean"], "")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_ghi","note_level"], "")
+        vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], "")
         maintenancetime = np.array([rec_gprmc.time.astype('datetime64[ns]')[-1]])
     else:
         qc_main = pyrnet.reports.get_qcflag(
@@ -810,12 +816,23 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
     for i in range(len(dslist)):
         dst = dslist[i]
         for var in dst:
-            for attr in dst[var].attrs:
-                if attr not in merge_attrs:
+            # for attr in dst[var].attrs:
+            #     if attr not in merge_attrs:
+            #         continue
+            for j,attr in enumerate(merge_attrs):
+                if "note" in attr and not var.startswith("maintenance"):
                     continue
+                if "note" not in attr and var.startswith("maintenance"):
+                    continue
+                if attr not in dst[var].attrs:
+                    fill_value = dst.station.size * [merge_attrs_fill_value[j]]
+                    dst[var].attrs.update({
+                        attr: fill_value
+                     })
                 # save station index, as attributes are related to station dimension
                 attridx = list(dst.station.values.astype(int))
                 attrval = list(pyrnet.utils.make_iter(dst[var].attrs[attr]))
+
                 # merge attributes, overwrite values of same station
                 if var not in merged_attrs:
                     merged_attrs.update({var:{}})
@@ -823,6 +840,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
                 if attr in merged_attrs[var]:
                     mattrval = merged_attrs[var][attr] + attrval
                     mattridx = mattrs_idx[var][attr] + attridx
+                    
                     _,idx = np.unique(mattridx, return_index=True)
                     attridx = [mattridx[i] for i in idx]
                     attrval = [mattrval[i] for i in idx]

@@ -6,7 +6,7 @@ __all__ = ['logger', 'CONSTANTS', 'QCCode', 'init_qc_flag', 'add_qc_flags']
 # %% ../../nbs/pyrnet/qcrad.ipynb 2
 import xarray as xr
 import numpy as np
-import trosat.sunpos as sp
+import warnings
 import logging
 
 import pyrnet.data
@@ -151,14 +151,19 @@ def add_qc_flags(ds, vars):
     thres_high = np.ones(ds.time.size)*1.1
     thres_low[ds.szen.mean("station")>75] = 0.85
     thres_low[ds.szen.mean("station")>75] = 1.15
-    all_values_mean = np.nanmean(np.concatenate([dsr[var].values for var in dsr],axis=1),axis=1)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', message='Mean of empty slice')
+        all_values_mean = np.nanmean(np.concatenate([dsr[var].values for var in dsr],axis=1),axis=1)
+        
     for var in vars:
         is_tilted = pyrnet.utils.check_tilted(ds[var])
         ratio = np.ones(dsr[var].shape)
         if np.any(is_tilted):
             meanvalues =  all_values_mean
         else:
-            meanvalues = np.nanmean(dsr[var].values, axis=1)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(action='ignore', message='Mean of empty slice')
+                meanvalues = np.nanmean(dsr[var].values, axis=1)
         ratio[meanvalues>50] = dsr[var].values[meanvalues>50] / meanvalues[meanvalues>50][:,None]
         
         # reindex ratio to original resolution
