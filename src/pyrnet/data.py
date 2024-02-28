@@ -746,13 +746,20 @@ def _sort_by_station(dslist):
 
 # %% ../../nbs/pyrnet/data.ipynb 73
 def _merge_gattrs_by_station(dslist, merge_gattrs):
+    # merge variable attrs:
+    merge_gattrs_fill_value = [merge_gattrs[key] for key in merge_gattrs] 
+    merge_gattrs = [key for key in merge_gattrs]
+    
     merged_gattrs = {}
     gattrs_idx = {}
     for i in range(len(dslist)):
         dst = dslist[i]
-        for attr in dst.attrs:
-            if attr not in merge_gattrs:
-                continue
+        for j,attr in enumerate(merge_gattrs):
+            if attr not in dst.attrs:
+                fill_value = dst.station.size * [merge_gattrs_fill_value[j]]
+                dst.attrs.update({
+                    attr: fill_value
+                })
             # save station index, as attributes are related to station dimension
             attridx = list(dst.station.values.astype(int))
             attrval = list(pyrnet.utils.make_iter(dst.attrs[attr]))
@@ -899,7 +906,7 @@ def _maintenancetime_snap_to_gap(ds):
         igap = np.argwhere(np.isnan(
             ds.ghi.isel(station=istation).values
         )).ravel()
-        if len(igap)==0:
+        if len(igap)<10:
             continue
         digap = np.diff(igap)
         istartgaps = np.insert(digap,0,0)!=1
@@ -929,7 +936,7 @@ def merge_l1b(
         dslist,
         freq='1s',
         timevar='time',
-        merge_gattrs=["site"],
+        merge_gattrs={"site":""},
         merge_attrs={
             "calibration_Cabsolute":0,
             "serial":"",
