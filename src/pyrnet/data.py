@@ -947,6 +947,21 @@ def _maintenancetime_snap_to_gap(ds):
         "maintenancetime": ("maintenancetime", new_mtimes)
     })
     ds = ds.sortby("maintenancetime")
+    
+    # merge duplicates
+    dates, counts = np.unique(ds.maintenancetime.values,return_counts=True)
+    duplets = dates[counts>1]
+    if len(duplets)>0:
+        dsold = ds.copy()
+        ds = ds.drop_duplicates(dim='maintenancetime', keep='first')
+        for ddate in duplets:
+            dst = dsold.sel(maintenancetime=ddate)
+            vars = [var for var in dst if "maintenancetime" in  dst[var].dims]
+            for var in vars:
+                for i in range(dst.maintenancetime.size-1):
+                    mask = np.isnan(ds[var].sel(maintenancetime=ddate).values)
+                    ds[var].sel(maintenancetime=ddate).values[mask] = dst[var].isel(maintenancetime=i+1).values[mask]
+    
     return ds
 
 # %% ../../nbs/pyrnet/data.ipynb 80
