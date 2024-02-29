@@ -622,6 +622,9 @@ def to_l1b(
     ds_l1b = ds_l1b.expand_dims(station_dim, axis=-1)
     ds_l1b["station"].attrs.update(station_attrs)
     
+    # add maintenancetime coord
+    ds_l1b = ds_l1b.assign_coords({"maintenancetime":ds_l1a.maintenancetime})
+    
     ######################################################################################
     ## Interpolate GPS coordinates to l1b time
     ds_gps = ds_l1a.drop_dims("adctime")
