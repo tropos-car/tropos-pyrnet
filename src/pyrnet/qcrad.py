@@ -43,10 +43,10 @@ class QCCode:
 # %% ../../nbs/pyrnet/qcrad.ipynb 10
 def init_qc_flag(ds, var):
     qc_bits = [2**i for i in range(7)]
-    ds[f"qc_flag_{var}"] = ds[var].copy()
-    ds[f"qc_flag_{var}"].values = np.zeros(ds[var].shape).astype(np.ubyte)
-    attrs = ds[f"qc_flag_{var}"].attrs
-    attrs.update({
+    # ds[f"qc_flag_{var}"] = ds[var].copy()
+    # ds[f"qc_flag_{var}"] = np.zeros(ds[var].shape).astype(np.ubyte)
+    ds = ds.assign({f"qc_flag_{var}": (ds[var].dims, np.zeros(ds[var].shape).astype(np.ubyte))})
+    attrs = {
         "standard_name": "quality_flag",
         "ancillary_variables": var,
         "valid_range": [0, np.sum(qc_bits)],
@@ -61,15 +61,22 @@ def init_qc_flag(ds, var):
             "comparison_to_high" + " "+
             "quality_control_failed"
         )
-    })
-    attrs.pop("units", None)
-    attrs.pop("long_name", None)
+    }
     ds[f"qc_flag_{var}"].attrs.update(attrs)
     ds[f"qc_flag_{var}"].encoding.update({
         "dtype": "u1",
         "_FillValue": 255,
         "zlib": True
     })
+    
+    # update flux var ancillary variables
+    if "ancillary_variables" in ds[var].attrs:
+        avars = ds[var].attrs["ancillary_variables"] + " "
+    else:
+        avars = ""
+    if f"qc_flag_{var}" not in avars:
+        ds[var].attrs.update({"ancillary_variables": avars + f"qc_flag_{var}"})
+    
     return ds
 
 # %% ../../nbs/pyrnet/qcrad.ipynb 18

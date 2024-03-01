@@ -446,6 +446,9 @@ def to_l1a(
         vattrs = assoc_in(vattrs, ["maintenance_flag_gti","note_level"], report[key]["note_align2"])
     qc_main = np.ubyte(qc_main)
     qc_extra = np.ubyte(qc_extra)
+    
+    vattrs = assoc_in(vattrs, ["ghi","ancillary_variables"], "maintenance_flag_ghi")
+    vattrs = assoc_in(vattrs, ["gti","ancillary_variables"], "maintenance_flag_gti")
 
     # 3. Add global meta data
     now = pd.to_datetime(np.datetime64("now"))
@@ -788,10 +791,6 @@ def _merge_gattrs_by_station(dslist, merge_gattrs):
     return merged_gattrs
 
 def _merge_vattrs_by_station(dslist, merge_attrs):
-    # merge variable attrs:
-    merge_attrs_fill_value = [merge_attrs[key] for key in merge_attrs] 
-    merge_attrs = [key for key in merge_attrs]
-    
     # add missing gti variables
     for i in range(len(dslist)):
         dst = dslist[i].copy()
@@ -803,12 +802,14 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
             dst = dst.assign({
                 gti_var: (dst[ghi_var].dims, np.full(dst[ghi_var].shape, np.nan))
             })
-            for j,attr in enumerate(merge_attrs):
-                if "note" in attr and not ghi_var.startswith("maintenance"):
+            for attr in merge_attrs:
+                skip = True
+                for apply_to in merge_attrs[attr]["apply_to"]:
+                    if gti_var.startswith(apply_to):
+                        skip = False
+                if skip:
                     continue
-                if "note" not in attr and ghi_var.startswith("maintenance"):
-                    continue
-                fill_value = dst.station.size * [merge_attrs_fill_value[j]]
+                fill_value = dst.station.size * [merge_attrs[attr]["fill_value"]]
                 dst[gti_var].attrs.update({
                     attr: fill_value
                 })
@@ -819,16 +820,15 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
     for i in range(len(dslist)):
         dst = dslist[i]
         for var in dst:
-            # for attr in dst[var].attrs:
-            #     if attr not in merge_attrs:
-            #         continue
-            for j,attr in enumerate(merge_attrs):
-                if "note" in attr and not var.startswith("maintenance"):
-                    continue
-                if "note" not in attr and var.startswith("maintenance"):
+            for attr in merge_attrs:
+                skip = True
+                for apply_to in merge_attrs[attr]["apply_to"]:
+                    if var.startswith(apply_to):
+                        skip = False
+                if skip:
                     continue
                 if attr not in dst[var].attrs:
-                    fill_value = dst.station.size * [merge_attrs_fill_value[j]]
+                    fill_value = dst.station.size * [merge_attrs[attr]["fill_value"]]
                     dst[var].attrs.update({
                         attr: fill_value
                      })
@@ -974,13 +974,34 @@ def merge_l1b(
         timevar='time',
         merge_gattrs={"site":""},
         merge_attrs={
-            "calibration_Cabsolute":0,
-            "serial":"",
-            "vangle":0,
-            "hangle":0,
-            "note_general":"",
-            "note_clean":"",
-            "note_level":""
+            "calibration_Cabsolute":dict(
+                fill_value=0,
+                apply_to=["ghi", "gti"]
+            ),
+            "serial":dict(
+                fill_value="",
+                apply_to=["ghi", "gti"]
+            ),
+            "vangle":dict(
+                fill_value=0,
+                apply_to=["ghi", "gti"]
+            ),
+            "hangle":dict(
+                fill_value=0,
+                apply_to=["ghi", "gti"]
+            ),
+            "note_general":dict(
+                fill_value="",
+                apply_to=["maintenance"]
+            ),
+            "note_clean":dict(
+                fill_value="",
+                apply_to=["maintenance"]
+            ),
+            "note_level":dict(
+                fill_value="",
+                apply_to=["maintenance"]
+            ),
         }
 ):
     # sort by first station coordinate
