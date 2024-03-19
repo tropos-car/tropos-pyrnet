@@ -520,9 +520,8 @@ def to_l1a(
 
     # add attributes to Dataset
     for k,v in vattrs.items():
-        if k not in ds.keys():
-            continue
-        ds[k].attrs = v
+        for key in [key for key in ds if key.startswith(k)]:
+            ds[key].attrs.update(v)
 
     # add encoding to Dataset
     ds = add_encoding(ds, vencode)
@@ -1056,7 +1055,7 @@ def merge_l1b(
                 ds_mtime_station[var].values[overlap] = np.nan
             ds_mtime_station = ds_mtime_station.merge(dst)
     
-    # merge vars with (time,station) dims
+    # merge vars with (station) dims
     for i in range(len(dslist)):
         dst = dslist[i].copy()
         dst = dst.drop_vars(
@@ -1070,8 +1069,14 @@ def merge_l1b(
                 ds_station = ds_station.merge(dst, compat='no_conflicts')
             except:
                 # override if station already exists
+                # but fill nan values if available in second dataset
+                ustations = np.unique(list(ds_station.station.values)+list(dst.station.values))
+                ds_station = ds_station.reindex(station=ustations)
+                dst = dst.reindex(station=ustations)
+                for key in list(set(ds_station.keys())&set(dst.keys())):
+                    mask = np.isnan(ds_station[key].values)
+                    ds_station[key].values[mask] = dst[key].values[mask]
                 ds_station = ds_station.merge(dst, compat='override')
-            #ds_station = xr.concat((ds_station, dst), dim='station')
     
     ds_merged = xr.merge([ds_time_station,ds_station,ds_mtime_station])
     
