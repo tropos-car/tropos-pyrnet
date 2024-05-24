@@ -173,7 +173,7 @@ def parse_legacy_logbook(fn):
         faccept = [1,2,3,4]
         dfb = pd.DataFrame(
             {"datestamp": lbb['date'],
-             "Q00": box,
+             "Q00": int(box),
              "Q01": lbb['notes'],
              "MainQ01[comment]": np.repeat("",N),
              "MainQ02[comment]": np.repeat("",N),
