@@ -25,6 +25,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@click.version_option()
 @click.group("pyrnet")
 def cli():
     pass
