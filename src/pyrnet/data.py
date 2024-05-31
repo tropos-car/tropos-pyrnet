@@ -528,7 +528,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 63
+# %% ../../nbs/pyrnet/data.ipynb 62
 def to_l1b(
         fname: str,
         *,
@@ -700,7 +700,7 @@ def to_l1b(
                 zen=ds_l1b.szen.values,
                 azi=ds_l1b.sazi.values
             )
-        
+        mua[mua<=0] = np.nan
         mask_mua = ~np.isnan(mua)
         Ca = 1e6/cfac[i]
         Cc = np.polynomial.polynomial.polyval(mua, c=CCcoef)
@@ -744,7 +744,7 @@ def to_l1b(
 
     return ds_l1b
 
-# %% ../../nbs/pyrnet/data.ipynb 71
+# %% ../../nbs/pyrnet/data.ipynb 70
 def _sort_by_station(dslist):
     # sort dslist for first station
     station0 = []
@@ -755,7 +755,7 @@ def _sort_by_station(dslist):
     return dslist
 
 
-# %% ../../nbs/pyrnet/data.ipynb 74
+# %% ../../nbs/pyrnet/data.ipynb 73
 def _merge_gattrs_by_station(dslist, merge_gattrs):
     # merge variable attrs:
     merge_gattrs_fill_value = [merge_gattrs[key] for key in merge_gattrs] 
@@ -855,7 +855,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
     return dslist, merged_attrs
     
 
-# %% ../../nbs/pyrnet/data.ipynb 77
+# %% ../../nbs/pyrnet/data.ipynb 76
 def _reindex_time(dslist, freq='1s', timevar='time'):
     dates = []
     for i in range(len(dslist)):
@@ -908,7 +908,7 @@ def _reindex_maintenancetime(dslist):
         )
     return dslist
 
-# %% ../../nbs/pyrnet/data.ipynb 79
+# %% ../../nbs/pyrnet/data.ipynb 78
 def _maintenancetime_snap_to_gap(ds):
     old_mtimes = ds.maintenancetime.values
     new_mtimes = old_mtimes.copy()
@@ -966,7 +966,7 @@ def _maintenancetime_snap_to_gap(ds):
     
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 81
+# %% ../../nbs/pyrnet/data.ipynb 80
 def merge_l1b(
         dslist,
         freq='1s',
