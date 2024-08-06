@@ -153,36 +153,49 @@ def add_qc_flags(ds, vars):
         
         
     # compare all sensors from network, or single station
-    dsr = dsr.resample(time="30min",skipna=True).mean()
-    thres_low = np.ones(ds.time.size)*0.9
-    thres_high = np.ones(ds.time.size)*1.1
-    thres_low[ds.szen.mean("station")>75] = 0.85
-    thres_low[ds.szen.mean("station")>75] = 1.15
+    window = 30*60
+    if dsr.time.size<window:
+        window = dsr.time.size
+    dsrrolling = dsr.rolling(time=window)
+    dsr = dsrrolling.mean(skipna=True)
+    dsrmin = dsrrolling.min(skipna=True)
+    dsrmax = dsrrolling.max(skipna=True)
+    dsr = dsr.where(dsrmin.ghi>0.8*dsrmax.ghi)
+    thres_low = np.ones(ds_l1b.time.size)*0.9
+    thres_high = np.ones(ds_l1b.time.size)*1.1
+    thres_low[ds_l1b.szen.mean("station")>75] = 0.85
+    thres_high[ds_l1b.szen.mean("station")>75] = 1.15
+    
+    all_values_tilted_flag = np.concatenate([pyrnet.utils.check_tilted(dsr[var]) for var in dsr],axis=0)
+    all_values = np.concatenate([dsr[var].values for var in dsr],axis=1)
     with warnings.catch_warnings():
         warnings.filterwarnings(action='ignore', message='Mean of empty slice')
-        all_values_mean = np.nanmean(np.concatenate([dsr[var].values for var in dsr],axis=1),axis=1)
+        all_values_mean_no_tilt = np.nanmean(all_values[:,~all_values_tilted_flag],axis=1)
+        all_values_mean_tilt = np.nanmean(all_values[:,all_values_tilted_flag],axis=1)
+    
+    for var in config["radflux_varname"]:
+        is_tilted = pyrnet.utils.check_tilted(ds_l1b[var])
+        meanvalues = np.repeat(all_values_mean_no_tilt[:,None],dsr[var].shape[1],axis=1)
+        meanvalues[:,is_tilted]  = all_values_mean_tilt[:,None]
         
-    for var in vars:
-        is_tilted = pyrnet.utils.check_tilted(ds[var])
         ratio = np.ones(dsr[var].shape)
-        if np.any(is_tilted):
-            meanvalues =  all_values_mean
-        else:
-            with warnings.catch_warnings():
-                warnings.filterwarnings(action='ignore', message='Mean of empty slice')
-                meanvalues = np.nanmean(dsr[var].values, axis=1)
-        ratio[meanvalues>50] = dsr[var].values[meanvalues>50] / meanvalues[meanvalues>50][:,None]
-        
+        ratio[meanvalues>50] = dsr[var].values[meanvalues>50] / meanvalues[meanvalues>50]
+    
+        fig,ax = plt.subplots(1,1)
+        ax.set_title(var)
+        ax.plot(dsr.time,dsr[var].values,'grey')
+        ax.fill_between(dsr.time,all_values_mean_no_tilt*0.9,all_values_mean_no_tilt*1.1,color='r',alpha=0.2)
+        ax.plot(dsr.time,meanvalues,'k')
         # reindex ratio to original resolution
         dsr = dsr.assign({"ratio": (("time","station"), ratio)})
-        ratio = dsr.ratio.reindex_like(ds, method='nearest').values
+        ratio = dsr.ratio.reindex_like(ds_l1b, method='nearest').values
         dsr = dsr.drop_vars(["ratio"])
         # comparison to low
         mask = ratio < thres_low[:,None]
-        ds[f"qc_flag_{var}"].values[mask] += QCCode.compare_to_low
-        
+        ds_l1b[f"qc_flag_{var}"].values[mask] += QCCode.compare_to_low
+    
         # comparison to high
         mask = ratio > thres_high[:,None]
-        ds[f"qc_flag_{var}"].values[mask] += QCCode.compare_to_high
+        ds_l1b[f"qc_flag_{var}"].values[mask] += QCCode.compare_to_high
     
     return ds
