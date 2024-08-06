@@ -181,11 +181,6 @@ def add_qc_flags(ds, vars):
         ratio = np.ones(dsr[var].shape)
         ratio[meanvalues>50] = dsr[var].values[meanvalues>50] / meanvalues[meanvalues>50]
     
-        fig,ax = plt.subplots(1,1)
-        ax.set_title(var)
-        ax.plot(dsr.time,dsr[var].values,'grey')
-        ax.fill_between(dsr.time,all_values_mean_no_tilt*0.9,all_values_mean_no_tilt*1.1,color='r',alpha=0.2)
-        ax.plot(dsr.time,meanvalues,'k')
         # reindex ratio to original resolution
         dsr = dsr.assign({"ratio": (("time","station"), ratio)})
         ratio = dsr.ratio.reindex_like(ds, method='nearest').values
