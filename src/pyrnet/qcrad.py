@@ -173,7 +173,7 @@ def add_qc_flags(ds, vars):
         all_values_mean_no_tilt = np.nanmean(all_values[:,~all_values_tilted_flag],axis=1)
         all_values_mean_tilt = np.nanmean(all_values[:,all_values_tilted_flag],axis=1)
     
-    for var in config["radflux_varname"]:
+    for var in vars:
         is_tilted = pyrnet.utils.check_tilted(ds[var])
         meanvalues = np.repeat(all_values_mean_no_tilt[:,None],dsr[var].shape[1],axis=1)
         meanvalues[:,is_tilted]  = all_values_mean_tilt[:,None]
