@@ -479,6 +479,8 @@ def to_l1a(
     if adc_volts.shape[1]<5: # gti data is not available
         adc_volts = np.concatenate((adc_volts,-1*np.ones(adc_volts.shape[0])[:,None]),axis=1)
 
+    
+
     # 8. Make xarray Dataset
     values = {}
     for k, v in sconfig.items():
@@ -490,6 +492,16 @@ def to_l1a(
         values.update(
             {k: offset + C*volts/gain}
         )
+    
+    # Remove rh and temperature error if input voltage to low
+    # Allow only sensor values of voltage V < (V(battery)-2),
+    # as input voltage needs to be at least 2V larger then sensor output
+    for k in ["rh","ta"]:
+        iadc = sconfig[k]["iadc"]
+        volts_sensor = (values[k][:,0]-sconfig[k]["offset"])/sconfig[k]["C"] # no gain, as we need voltage at sensor
+        mask = volts_sensor > (values["battery_voltage"][:,0] - 2.) 
+        values[k][mask,0] = np.nan 
+    
     ds = xr.Dataset(
         data_vars={
             "ghi": (("adctime","station"), values["ghi"]), # [V]
@@ -744,7 +756,7 @@ def to_l1b(
 
     return ds_l1b
 
-# %% ../../nbs/pyrnet/data.ipynb 70
+# %% ../../nbs/pyrnet/data.ipynb 72
 def _sort_by_station(dslist):
     # sort dslist for first station
     station0 = []
@@ -755,7 +767,7 @@ def _sort_by_station(dslist):
     return dslist
 
 
-# %% ../../nbs/pyrnet/data.ipynb 73
+# %% ../../nbs/pyrnet/data.ipynb 75
 def _merge_gattrs_by_station(dslist, merge_gattrs):
     # merge variable attrs:
     merge_gattrs_fill_value = [merge_gattrs[key] for key in merge_gattrs] 
@@ -855,7 +867,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
     return dslist, merged_attrs
     
 
-# %% ../../nbs/pyrnet/data.ipynb 76
+# %% ../../nbs/pyrnet/data.ipynb 78
 def _reindex_time(dslist, freq='1s', timevar='time'):
     dates = []
     for i in range(len(dslist)):
@@ -908,7 +920,7 @@ def _reindex_maintenancetime(dslist):
         )
     return dslist
 
-# %% ../../nbs/pyrnet/data.ipynb 78
+# %% ../../nbs/pyrnet/data.ipynb 80
 def _maintenancetime_snap_to_gap(ds):
     old_mtimes = ds.maintenancetime.values
     new_mtimes = old_mtimes.copy()
@@ -966,7 +978,7 @@ def _maintenancetime_snap_to_gap(ds):
     
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb 80
+# %% ../../nbs/pyrnet/data.ipynb 82
 def merge_l1b(
         dslist,
         freq='1s',
