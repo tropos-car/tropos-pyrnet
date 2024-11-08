@@ -2,6 +2,13 @@
 // sorted by campaign identifier
 {
   "None": {},
+  "hope-eifel2013":{
+    "006": "Soilnet 115",
+    "064": "Soilnet 96",
+    "072": "Soilnet 95",
+    "098": "Soilnet 29",
+    "099": "Soilnet 40"
+  }
   "ioprao2014":{
     "001": "Falkenberg SODAR & CANAL",
     "005": "Falkenberg SODAR & CANAL",
