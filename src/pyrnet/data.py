@@ -1015,6 +1015,7 @@ def merge_l1b(
             ),
         }
 ):
+    logger.info(f"Merging {len(dslist)} datasets.")
     # sort by first station coordinate
     dslist = _sort_by_station(dslist)
     
@@ -1121,5 +1122,6 @@ def merge_l1b(
     ds_merged = pyrnet.qcrad.add_qc_flags(ds_merged, ["ghi","gti"])
     # add encoding
     ds_merged = add_encoding(ds_merged)
+    logger.info("... merging done.")
     return ds_merged
 
