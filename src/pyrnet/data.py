@@ -802,36 +802,29 @@ def _merge_gattrs_by_station(dslist, merge_gattrs):
     return merged_gattrs
 
 def _merge_vattrs_by_station(dslist, merge_attrs):
-    # check if gti is in one of the datasets
-    gti = False
-    for ds in dslist:
-        if "gti" in ds:
-            gti = True
-    
-    if gti:
-        # add gti variables if some datasets missing gti
-        for i in range(len(dslist)):
-            dst = dslist[i].copy()
-            if "gti" in dst:
-                continue
-            ghi_vars = [var for var in dst if "ghi" in var]
-            gti_vars = [var.replace("ghi","gti") for var in ghi_vars]
-            for ghi_var, gti_var in zip(ghi_vars,gti_vars):
-                dst = dst.assign({
-                    gti_var: (dst[ghi_var].dims, np.full(dst[ghi_var].shape, np.nan))
+    # add missing gti variables
+    for i in range(len(dslist)):
+        dst = dslist[i].copy()
+        if "gti" in dst:
+            continue
+        ghi_vars = [var for var in dst if "ghi" in var]
+        gti_vars = [var.replace("ghi","gti") for var in ghi_vars]
+        for ghi_var, gti_var in zip(ghi_vars,gti_vars):
+            dst = dst.assign({
+                gti_var: (dst[ghi_var].dims, np.full(dst[ghi_var].shape, np.nan))
+            })
+            for attr in merge_attrs:
+                skip = True
+                for apply_to in merge_attrs[attr]["apply_to"]:
+                    if gti_var.startswith(apply_to):
+                        skip = False
+                if skip:
+                    continue
+                fill_value = dst.station.size * [merge_attrs[attr]["fill_value"]]
+                dst[gti_var].attrs.update({
+                    attr: fill_value
                 })
-                for attr in merge_attrs:
-                    skip = True
-                    for apply_to in merge_attrs[attr]["apply_to"]:
-                        if gti_var.startswith(apply_to):
-                            skip = False
-                    if skip:
-                        continue
-                    fill_value = dst.station.size * [merge_attrs[attr]["fill_value"]]
-                    dst[gti_var].attrs.update({
-                        attr: fill_value
-                    })
-            dslist[i] = dst
+        dslist[i] = dst
     
     merged_attrs = {}
     mattrs_idx = {}
