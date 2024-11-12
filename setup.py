@@ -22,6 +22,7 @@ setup(
         "numpy",
         "scipy",
         "pandas",
+        "bottleneck",
         "xarray",
         "netcdf4",
         "pyproj",
