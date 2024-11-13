@@ -30,7 +30,7 @@
     "024":[7.55,null],
     "025":[7.22,null],
     "026":[7.35,null],
-    "027":[null,null],
+    "027":[null,null], //missing
     "028":[7.50,null],
     "029":[7.21,null],
     "030":[7.22,null],
@@ -39,7 +39,7 @@
     "033":[7.44,null],
     "034":[7,null],
     "035":[7.35,null],
-    "036":[null,null],
+    "036":[null,null], //missing
     "037":[7.54,null],
     "038":[7.44,null],
     "039":[7.43,null],
@@ -86,7 +86,7 @@
     "079":[7.62,null],
     "080":[7.3,null],
     "081":[7.64,null],
-    "082":[null,null],
+    "082":[null,null], //missing
     "083":[7.44,null],
     "084":[7.46,null],
     "085":[7.67,null],
@@ -102,9 +102,13 @@
     "095":[7.47,null],
     "096":[7.65,null],
     "097":[6.9,null],
-    "098":[null,null],
+    "098":[null,null], //missing
     "099":[7.51,null],
     "100":[7.32,null]
+  },
+  "2013-01-02":{ //take from IOPRAO2014 as original calibration is missin
+    "082": [7.42, null], 
+    "098": [7.13, null] 
   },
   "2013-04-25": {
     "028": [7.21,null],
