@@ -3,7 +3,7 @@
 processed with pyrnet-0.2.16
 ```
 
-The PyrNet was setup for calibration in a dense array on the Melpitz measurement field from 2013-08-29 to 2013-08-30. Cross-calibration is done versus reference observations from the TROPOS MObile RaDiation ObseRvatory (MORDOR) station.
+The PyrNet was setup for calibration during HOPE-Melpitz on the Melpitz measurement field. Cross-calibration is done versus reference observations from the TROPOS MObile RaDiation ObseRvatory (MORDOR) station.
 
 ### Imports
 
@@ -53,7 +53,6 @@ Set local data paths and lookup metadata.
 ```python
 pf_mordor = "mordor/CR1000_Radiation_corrected.dat"
 pf_pyrnet = "l1b_network/{date:%Y-%m-%d}_P1D_pyrnet_hope-melpitz_n000l1bf1s.c01.nc"
-dates = pd.date_range("2015-05-06","2015-05-11")
 
 loc = Location(51.525175, 12.91648, altitude=90) # Melpitz
 
