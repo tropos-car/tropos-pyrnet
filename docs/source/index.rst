@@ -32,6 +32,7 @@ To verify comparability of the individual irradiance observations of each statio
 Calibration cosine error
 ==================================
 PyrNet stations pyranometer are compared to clear sky reference measurements. A cosine correction function is determined.
+
 .. toctree::
    :maxdepth: 1
    :numbered:
