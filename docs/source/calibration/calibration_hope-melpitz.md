@@ -1,4 +1,4 @@
-## Calibration for HOPE 2013
+## 2013 HOPE
 ```
 processed with pyrnet-0.2.16
 ```

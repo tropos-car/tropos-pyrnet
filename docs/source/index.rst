@@ -13,7 +13,7 @@ Welcome to PyrNet's documentation!
    howto.md
 
 
-Calibration
+Calibration absolute
 ==================================
 PyrNet stations pyranometer are absolut calibrated versus secondary standard pyranometers in field.
 To verify comparability of the individual irradiance observations of each station, these stations are colectively calibrated within a time frame close to a major measurement campaign.
@@ -21,17 +21,27 @@ To verify comparability of the individual irradiance observations of each statio
 .. toctree::
    :maxdepth: 1
    :numbered:
-   :caption: Calibrations:
+   :caption: Calibration absolute:
 
-   calibration/mean_cosine_correction.md
    calibration/calibration_s2vsr.md
-   calibration/cos_corr_s2vsr.ipynb
    calibration/calibration_metpvnet.md
    calibration/calibration_melcol.md
-   calibration/calibration_melcol_cc.md
    calibration/calibration_ioprao.md
-   calibration/calibration_ioprao_cc.md
    calibration/calibration_hope-melpitz.md
+
+Calibration cosine error
+==================================
+PyrNet stations pyranometer are compared to clear sky reference measurements. A cosine correction function is determined.
+.. toctree::
+   :maxdepth: 1
+   :numbered:
+   :caption: Calibration cosine error:
+
+   calibration/mean_cosine_correction.md
+   calibration/cos_corr_s2vsr.ipynb
+   calibration/calibration_melcol_cc.md
+   calibration/calibration_ioprao_cc.md
+
 
 Code Documentation
 ==================================

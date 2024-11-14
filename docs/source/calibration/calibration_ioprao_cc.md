@@ -1,4 +1,4 @@
-## Cosine Correction Calibration for IOPRAO 2014
+## 2014 IOPRAO
 ```
 processed with pyrnet-0.2.16
 ```
@@ -518,7 +518,7 @@ ax.plot(mordor.time[mordor.cs_mask],mordor.TP2_Wm2[mordor.cs_mask],ls='',marker=
     
 
 
-## Load BSRN data
+#### Load BSRN data
 
 
 ```python

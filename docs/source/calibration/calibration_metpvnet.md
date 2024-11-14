@@ -1,5 +1,5 @@
 
-# MetPVNet 2019-06
+# 2019-06 MetPVNet
 We calibrate the Pyrnet (30 stations with two pyranometer setup) for MetPVNet 2018/2019 measurement campaigns.
 Cross-calibration is done versus MORDOR3 global pyranometer.
 

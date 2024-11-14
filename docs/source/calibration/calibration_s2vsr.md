@@ -1,4 +1,4 @@
-## Calibration S2VSR 2023-06
+## 2023-06 S2VSR
 
 The PyrNet setup for [Small Scale Variability of Solar Radiation (S2VSR)](https://www.arm.gov/research/campaigns/sgp2023s2vsr) was setup for calibration on the ARM-SGP guest instrument facility (**GIF**) for calibration from 2023-06-02 to 2023-06-08. Cross-calibration is done versus reference observations from the ARM-SGP broadband radiometer station (**BRS**) ([doi:10.5439/1550918](http://dx.doi.org/10.5439/1550918))
 

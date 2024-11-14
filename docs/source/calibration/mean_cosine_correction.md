@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 
 ```python
+#|dropcode
 # Coefficients from calibrations:
 
 a3,a2,a1,a0 = [ -3.33, 5.85, -3.14, 1.49]
@@ -72,6 +73,7 @@ display(Latex(
 
 
 ```python
+#|dropcode
 szen = np.arange(1,80)
 mu0 = np.cos(np.deg2rad(szen))
 
