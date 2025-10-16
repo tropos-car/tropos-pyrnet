@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyrnet"
+dynamic = ["version"]
+description = "A Python module for handling the data of the TROPOS pyranometer network (PyrNet)"
+authors = [
+    {name = "Jonas Witthuhn", email = "witthuhn@tropos.de"}
+]
+license = {text = "GNU General Public License v3 (GPLv3)"}
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "bottleneck",
+    "xarray",
+    "netcdf4",
+    "pyproj",
+    "pip",
+    "jstyleson",
+    "Click",
+    "toolz",
+    "addict",
+    "openpyxl",
+    "xlrd",
+    "parse>=1.20",
+    "limepy",
+    "trosat-base @ git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base"
+]
+
+[project.optional-dependencies]
+nbs = ["jupyter", "nbdev", "nbformat", "cfchecker", "udunits2>=2.2.25"]
+docs = ["sphinx", "myst-parser", "myst-nb"]
+
+[project.entry-points.console_scripts]
+pyrnet = "pyrnet.click:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyrnet"]
+
+[tool.setuptools.package-data]
+pyrnet = ["share/*.json"]
+
+[tool.setuptools_scm]
+local_scheme = "dirty-tag"
+write_to = "src/pyrnet/_version.py" 
