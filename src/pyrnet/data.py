@@ -12,7 +12,8 @@ import pandas as pd
 import xarray as xr
 import logging
 from toolz import assoc_in, merge_with
-import pkg_resources as pkg_res
+#import pkg_resources as pkg_res
+import importlib.resources
 import warnings
 
 from trosat import sunpos as sp
@@ -174,7 +175,7 @@ def get_config(config: dict|None = None) -> dict:
     """Read default config and merge with input config
     """
 
-    fn_config = pkg_res.resource_filename("pyrnet", "share/pyrnet_config.json")
+    fn_config = os.path.join(importlib.resources.files("pyrnet"), "share/pyrnet_config.json")
     default_config = pyrnet.utils.read_json(fn_config)
     if config is None:
         config = default_config
@@ -190,13 +191,13 @@ def get_config(config: dict|None = None) -> dict:
     }
     for fn in cfiles:
         if config[fn] is None:
-            config[fn] =  pkg_res.resource_filename("pyrnet", cfiles[fn])
+            config[fn] =  os.path.join(importlib.resources.files("pyrnet"), cfiles[fn])
     return config
 
 def get_sensor_config(sconfig: dict|None = None) -> dict:
     """ Read the sensor configuration from the default json file and merge if needed. 
     """
-    fn_config = pkg_res.resource_filename("pyrnet", "share/pyrnet_sensor_config.json")
+    fn_config = os.path.join(importlib.resources.files("pyrnet"), "share/pyrnet_sensor_config.json")
     default_config = pyrnet.utils.read_json(fn_config)
     if sconfig is None:
         sconfig = default_config
@@ -651,7 +652,7 @@ def to_l1b(
         ds_gps = ds_gps.interp(gpstime=ds_l1b.time)
         ds_gps = ds_gps.drop_vars("gpstime")
 
-    ds_l1b = xr.merge((ds_l1b,ds_gps))
+    ds_l1b = xr.merge((ds_l1b,ds_gps),compat='no_conflicts')
 
     ######################################################################################
     ## Calc and add sun position
@@ -1091,7 +1092,7 @@ def merge_l1b(
                     ds_station[key].values[mask] = dst[key].values[mask]
                 ds_station = ds_station.merge(dst, compat='override')
     
-    ds_merged = xr.merge([ds_time_station,ds_station,ds_mtime_station])
+    ds_merged = xr.merge([ds_time_station,ds_station,ds_mtime_station],compat='no_conflicts')
     
     ###########################################################################
     ## add merged attrs

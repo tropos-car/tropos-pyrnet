@@ -16,7 +16,8 @@ import pandas as pd
 import xarray as xr
 from scipy.interpolate import interp1d
 from toolz import valfilter, cons, merge, merge_with
-import pkg_resources as pkg_res
+#import pkg_resources as pkg_res
+import importlib.resources
 import warnings
 
 # python -m pip install git+https://github.com/hdeneke/trosat-base.git#egg=trosat-base
@@ -78,7 +79,7 @@ def lookup_fnames(date, *, station, lvl, campaign, collection):
     """Parse Thredds server files and return list of filenames matching the date, station, campaign and collection configuration."""
     date = pyrutils.to_datetime64(date)
 
-    fn = pkg_res.resource_filename("pyrnet", "share/pyrnet_config.json")
+    fn = os.path.join(importlib.resources.files("pyrnet"), "share/pyrnet_config.json")
     pyrcfg = pyrutils.read_json(fn)
 
     # construct catalog url
@@ -410,9 +411,9 @@ def get_pyrnet_mapping(fn:str, date):
 # %% ../../nbs/pyrnet/pyrnet.ipynb 39
 def meta_lookup(date,*,serial=None,box=None,cfile=None, mapfile=None):
     if cfile is None:
-        cfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_calibration.json")
+        cfile = os.path.join(importlib.resources.files("pyrnet"), "share/pyrnet_calibration.json")
     if mapfile is None:
-        mapfile = pkg_res.resource_filename("pyrnet", "share/pyrnet_station_map.json")
+        mapfile = os.path.join(importlib.resources.files("pyrnet"), "share/pyrnet_station_map.json")
 
     map = get_pyrnet_mapping(mapfile,date)
     calib = read_calibration(cfile,date)
