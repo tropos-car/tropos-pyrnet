@@ -1052,7 +1052,7 @@ def merge_l1b(
                 overlap = (~np.isnan(dst[var].values))*(~np.isnan(dst[var].values))
                 ds_time_station[var].values = ds_time_station[var].values.astype(float)
                 ds_time_station[var].values[overlap] = np.nan
-            ds_time_station = ds_time_station.merge(dst)
+            ds_time_station = ds_time_station.merge(dst,compat='no_conflicts')
             
     # merge vars with (maintenancetime, station) dims
     for i in range(len(dslist)):
@@ -1067,7 +1067,7 @@ def merge_l1b(
                 overlap = (~np.isnan(dst[var].values))*(~np.isnan(dst[var].values))
                 ds_mtime_station[var].values = ds_mtime_station[var].values.astype(float)
                 ds_mtime_station[var].values[overlap] = np.nan
-            ds_mtime_station = ds_mtime_station.merge(dst)
+            ds_mtime_station = ds_mtime_station.merge(dst,compat='no_conflicts')
     
     # merge vars with (station) dims
     for i in range(len(dslist)):

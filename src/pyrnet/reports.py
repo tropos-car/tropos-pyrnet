@@ -269,7 +269,7 @@ def parse_report(
     for station in stations:
         dfq = df.query(f"Q00=={station}")
         # find next report within -1 to 10 days
-        report_dates = dfq["datestamp"].values.astype("datetime64")
+        report_dates = dfq["datestamp"].values.astype("datetime64[ns]")
         dtime = report_dates - date_of_maintenance
         mask = dtime < np.timedelta64(10,'D')
         mask *= dtime > np.timedelta64(-1,'h')
