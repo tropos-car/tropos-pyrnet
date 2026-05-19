@@ -195,11 +195,14 @@ def get_adc_time(rec_adc):
     # get millisecond part
     ta = rec_adc[:,0].astype('timedelta64[ms]')
     # get time difference between records
-    dt = np.diff(ta)
-    dt[dt<np.timedelta64(-850,'ms')] += 1000
+    diff = np.diff(ta)
+    udiff,counts = np.unique(diff,return_counts=True)
+    most_diff = udiff[np.argmax(counts)]
+    diff[diff<0] = most_diff
+    # dt[dt<np.timedelta64(-850,'ms')] += 1000
     # get cummulative time offset rel. to first ADC record
     ta[0] = 0
-    ta[1:] = np.cumsum(dt)
+    ta[1:] = np.cumsum(diff)
     return ta
 
 # %% ../../nbs/pyrnet/logger.ipynb 24
