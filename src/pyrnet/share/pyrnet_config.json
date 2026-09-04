@@ -10,6 +10,7 @@
   "file_mapping": null, // box to pyranometer serial number mapping
   "file_gti_angles": null, // box to tilted platform angles mapping
   "file_site": null, // box to measurement site name mapping
+  "file_sazi_mask": null, // mask certain solar azimut ranges for specific stations
   // Meta information
   "campaign": "", // Campaign name
   "project": "", // Project name
