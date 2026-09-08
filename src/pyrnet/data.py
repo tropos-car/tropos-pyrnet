@@ -5,7 +5,7 @@ __all__ = ['pyrnet_version', 'logger', 'get_fname', 'update_coverage_meta', 'str
            'resample', 'get_config', 'get_sensor_config', 'get_cfmeta', 'calc_encoding', 'add_encoding', 'to_l1a',
            'to_l1b', 'merge_l1b']
 
-# %% ../../nbs/pyrnet/data.ipynb #9842f9b7
+# %% ../../nbs/pyrnet/data.ipynb #d30349f2
 import os
 import numpy as np
 import pandas as pd
@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# %% ../../nbs/pyrnet/data.ipynb #8846bb8e
+# %% ../../nbs/pyrnet/data.ipynb #271b473f
 def get_fname(ds, freq, period=None, timevar='time', sfx='nc', kind=None, station=None, config=None):
     config = get_config(config)
     if period is None:
@@ -62,7 +62,7 @@ def get_fname(ds, freq, period=None, timevar='time', sfx='nc', kind=None, statio
     )
     return config["output"].format(**format_dict) 
 
-# %% ../../nbs/pyrnet/data.ipynb #07c16dab
+# %% ../../nbs/pyrnet/data.ipynb #95a1bba8
 def update_coverage_meta(ds, timevar='time'):
     """Update global attributes related to geospatial and time coverage
     """
@@ -86,7 +86,7 @@ def update_coverage_meta(ds, timevar='time'):
     return ds
 
 
-# %% ../../nbs/pyrnet/data.ipynb #de48a361
+# %% ../../nbs/pyrnet/data.ipynb #8cf64acd
 def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
     """ Stretch variable resolution to full integer size,
     to not lose resolution after averaging ADC count data."""
@@ -109,7 +109,7 @@ def stretch_resolution(ds: xr.Dataset) -> xr.Dataset:
         })
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb #f9be0b3c
+# %% ../../nbs/pyrnet/data.ipynb #4ac57334
 def to_netcdf(ds, fname, timevar="time"):
     """xarray to netcdf, but merge if exist
     """
@@ -140,7 +140,7 @@ def to_netcdf_l1b(ds, fname, freq='1s', timevar="time"):
     ds.to_netcdf(fname,
                  encoding={timevar:{'dtype':'float64'}}) # for OpenDAP 2 compatibility
 
-# %% ../../nbs/pyrnet/data.ipynb #1097cc0d
+# %% ../../nbs/pyrnet/data.ipynb #32ff6910
 def resample(ds, freq, methods='mean', kwargs={}):
     """ Resample xarray dataset using pandas for speed.
     https://github.com/pydata/xarray/issues/4498#issuecomment-706688398
@@ -171,7 +171,7 @@ def resample(ds, freq, methods='mean', kwargs={}):
     return dsouts
 
 
-# %% ../../nbs/pyrnet/data.ipynb #906d0a73
+# %% ../../nbs/pyrnet/data.ipynb #2cba781e
 def get_config(config: dict|None = None) -> dict:
     """Read default config and merge with input config
     """
@@ -222,7 +222,7 @@ def get_cfmeta(config: dict|None = None) -> dict:
     vattrs, vencode = pyrnet.utils.get_attrs_enc(d)
     return gattrs, vattrs, vencode
 
-# %% ../../nbs/pyrnet/data.ipynb #08226b07
+# %% ../../nbs/pyrnet/data.ipynb #7e315e95
 def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
     ADCfac = ADCV / (2**ADCbits-1) # Last bit is reserved 
     sencoding = {}
@@ -237,7 +237,7 @@ def calc_encoding(sconfig:dict, ADCV=3.3, ADCbits=10) -> dict:
         )
     return sencoding
 
-# %% ../../nbs/pyrnet/data.ipynb #43438cae
+# %% ../../nbs/pyrnet/data.ipynb #83ea91cc
 def add_encoding(ds, vencode=None):
     """
     Set valid_range attribute and encoding to every variable of the dataset.
@@ -326,7 +326,7 @@ def add_encoding(ds, vencode=None):
         raise ValueError("Dataset has no 'processing_level' attribute.")
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb #6f44a36f
+# %% ../../nbs/pyrnet/data.ipynb #45f1622e
 def to_l1a(
         fname : str,
         *,
@@ -543,7 +543,7 @@ def to_l1a(
 
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb #22af514d
+# %% ../../nbs/pyrnet/data.ipynb #07b860c7
 def to_l1b(
         fname: str,
         *,
@@ -685,10 +685,10 @@ def to_l1b(
     if config["campaign"] in sazi_masks:
         sazi_masks = sazi_masks[config["campaign"]]
         for i in range(ds_l1b.station.size):
-            st_no = int(ds_l1b.station.values[i])
+            st_no = f"{int(ds_l1b.station.values[i]):03d}"
             if not st_no in sazi_masks:
                 continue
-            for mask in sazi_masks:
+            for mask in sazi_masks[st_no]:
                 msel = ds_l1b.sazi.values[:,i] > mask[0]
                 msel*= ds_l1b.sazi.values[:,i] < mask[1]
                 for var in radflux_vars:
@@ -775,7 +775,7 @@ def to_l1b(
 
     return ds_l1b
 
-# %% ../../nbs/pyrnet/data.ipynb #8fc98271
+# %% ../../nbs/pyrnet/data.ipynb #fa3b2d76
 def _sort_by_station(dslist):
     # sort dslist for first station
     station0 = []
@@ -786,7 +786,7 @@ def _sort_by_station(dslist):
     return dslist
 
 
-# %% ../../nbs/pyrnet/data.ipynb #cb7c7d6e
+# %% ../../nbs/pyrnet/data.ipynb #ef05a89d
 def _merge_gattrs_by_station(dslist, merge_gattrs):
     # merge variable attrs:
     merge_gattrs_fill_value = [merge_gattrs[key] for key in merge_gattrs] 
@@ -886,7 +886,7 @@ def _merge_vattrs_by_station(dslist, merge_attrs):
     return dslist, merged_attrs
     
 
-# %% ../../nbs/pyrnet/data.ipynb #b3f2572e
+# %% ../../nbs/pyrnet/data.ipynb #df287908
 def _reindex_time(dslist, freq='1s', timevar='time'):
     dates = []
     for i in range(len(dslist)):
@@ -939,7 +939,7 @@ def _reindex_maintenancetime(dslist):
         )
     return dslist
 
-# %% ../../nbs/pyrnet/data.ipynb #4dca1db9
+# %% ../../nbs/pyrnet/data.ipynb #b301cb55
 def _maintenancetime_snap_to_gap(ds):
     old_mtimes = ds.maintenancetime.values
     new_mtimes = old_mtimes.copy()
@@ -997,7 +997,7 @@ def _maintenancetime_snap_to_gap(ds):
     
     return ds
 
-# %% ../../nbs/pyrnet/data.ipynb #ac3a0704
+# %% ../../nbs/pyrnet/data.ipynb #fee13bb0
 def merge_l1b(
         dslist,
         freq='1s',
